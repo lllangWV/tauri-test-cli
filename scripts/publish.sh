@@ -40,16 +40,52 @@ if [[ -n $(git status --porcelain) ]]; then
     fi
 fi
 
-# Ask for version bump type
-echo -e "${CYAN}Select version bump type:${NC}"
-echo "  1) patch  (${CURRENT_VERSION} -> $(./scripts/bump-version.sh patch 2>/dev/null | grep "New version" | awk '{print $3}' || echo "x.x.x"))"
-echo "  2) minor  (${CURRENT_VERSION} -> $(./scripts/bump-version.sh minor 2>/dev/null | grep "New version" | awk '{print $3}' || echo "x.x.x"))"
-echo "  3) major  (${CURRENT_VERSION} -> $(./scripts/bump-version.sh major 2>/dev/null | grep "New version" | awk '{print $3}' || echo "x.x.x"))"
-echo "  4) cancel"
+# ============================================================================
+# STEP 1: Run tests and build BEFORE bumping version
+# ============================================================================
+
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}▶ Step 1: Running pre-publish checks...${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Revert any changes from the preview
-git checkout pixi.toml package.json 2>/dev/null || true
+echo -e "${BLUE}Running unit tests...${NC}"
+if ! pixi run test-unit; then
+    echo -e "${RED}Tests failed! Aborting publish.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Tests passed${NC}"
+echo ""
+
+echo -e "${BLUE}Building package...${NC}"
+if ! pixi run build; then
+    echo -e "${RED}Build failed! Aborting publish.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Build successful${NC}"
+echo ""
+
+# ============================================================================
+# STEP 2: Ask for version bump type
+# ============================================================================
+
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}▶ Step 2: Select version bump...${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+# Calculate preview versions
+IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+PATCH_VERSION="${major}.${minor}.$((patch + 1))"
+MINOR_VERSION="${major}.$((minor + 1)).0"
+MAJOR_VERSION="$((major + 1)).0.0"
+
+echo -e "${CYAN}Select version bump type:${NC}"
+echo "  1) patch  (${CURRENT_VERSION} -> ${PATCH_VERSION})"
+echo "  2) minor  (${CURRENT_VERSION} -> ${MINOR_VERSION})"
+echo "  3) major  (${CURRENT_VERSION} -> ${MAJOR_VERSION})"
+echo "  4) cancel"
+echo ""
 
 read -p "Enter choice [1-4]: " -n 1 -r CHOICE
 echo ""
@@ -57,12 +93,15 @@ echo ""
 case $CHOICE in
     1)
         BUMP_TYPE="patch"
+        NEW_VERSION="$PATCH_VERSION"
         ;;
     2)
         BUMP_TYPE="minor"
+        NEW_VERSION="$MINOR_VERSION"
         ;;
     3)
         BUMP_TYPE="major"
+        NEW_VERSION="$MAJOR_VERSION"
         ;;
     4|*)
         echo -e "${YELLOW}Publish cancelled.${NC}"
@@ -71,36 +110,69 @@ case $CHOICE in
 esac
 
 echo ""
-echo -e "${GREEN}▶ Bumping version (${BUMP_TYPE})...${NC}"
+
+# ============================================================================
+# STEP 3: Bump version
+# ============================================================================
+
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}▶ Step 3: Bumping version to ${NEW_VERSION}...${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
 ./scripts/bump-version.sh "$BUMP_TYPE"
 
-# Get new version
-NEW_VERSION=$(grep -E '^version = ' pixi.toml | sed 's/version = "\(.*\)"/\1/')
+# ============================================================================
+# STEP 4: Commit, tag, and push to GitHub
+# ============================================================================
 
 echo ""
-echo -e "${GREEN}▶ Building package...${NC}"
-pixi run build
-
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}▶ Step 4: Pushing to GitHub...${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "${GREEN}▶ Running tests...${NC}"
-pixi run test-unit
 
-echo ""
-echo -e "${GREEN}▶ Committing changes...${NC}"
+echo -e "${BLUE}Committing changes...${NC}"
 git add pixi.toml package.json
 git commit -m "Bump version to $NEW_VERSION"
 
-echo ""
-echo -e "${GREEN}▶ Creating git tag v${NEW_VERSION}...${NC}"
+echo -e "${BLUE}Creating git tag v${NEW_VERSION}...${NC}"
 git tag "v${NEW_VERSION}"
 
-echo ""
-echo -e "${GREEN}▶ Pushing to remote...${NC}"
+echo -e "${BLUE}Pushing to remote...${NC}"
 git push
 git push --tags
 
+echo -e "${GREEN}✓ Pushed to GitHub${NC}"
+
+# ============================================================================
+# STEP 5: Final build for publish
+# ============================================================================
+
 echo ""
-echo -e "${GREEN}▶ Publishing to npm...${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}▶ Step 5: Final build...${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+echo -e "${BLUE}Building package for publish...${NC}"
+if ! pixi run build; then
+    echo -e "${RED}Final build failed! Version is bumped but not published.${NC}"
+    echo -e "${YELLOW}You may need to run 'pixi run build && npm publish' manually.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Build successful${NC}"
+
+# ============================================================================
+# STEP 6: Publish to npm
+# ============================================================================
+
+echo ""
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}▶ Step 6: Publishing to npm...${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
 npm publish
 
 echo ""
