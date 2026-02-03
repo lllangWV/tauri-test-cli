@@ -10,6 +10,47 @@ import { startServer } from "./server.js";
 import { ensureDependencies, printDependencyStatus } from "./checks.js";
 import { setup, stopServer, cleanup, checkXvfb, buildXvfbCommand } from "./commands/utils.js";
 
+/**
+ * Send a command to a running server (client mode)
+ */
+async function sendToServer(port: number, cmd: Record<string, unknown>): Promise<unknown> {
+  const url = `http://127.0.0.1:${port}`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cmd),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Server error (${response.status}): ${text}`);
+    }
+
+    return await response.json();
+  } catch (err) {
+    if (err instanceof TypeError && (err.message.includes("fetch") || err.message.includes("ECONNREFUSED"))) {
+      throw new Error(`No server running on port ${port}. Start one with: tauri-driver server --app <path> --port ${port}`);
+    }
+    throw err;
+  }
+}
+
+/**
+ * Check if a server is running on the given port
+ */
+async function isServerRunning(port: number): Promise<boolean> {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/status`, {
+      method: "GET",
+      signal: AbortSignal.timeout(1000),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 const HELP = `
 tauri-driver - CLI for testing Tauri applications
 
@@ -46,6 +87,9 @@ COMMANDS:
   stop [--port <port>]
       Stop a running tauri-driver server
 
+  status [--port <port>]
+      Check if a server is running
+
   cleanup
       Kill stale WebDriver processes (tauri-driver, WebKitWebDriver, Xvfb)
 
@@ -59,13 +103,31 @@ COMMANDS:
       Show this help message
 
 OPTIONS:
-  --app <path>      Path to Tauri app binary (REQUIRED for most commands)
+  --app <path>      Path to Tauri app binary (required for server/batch, optional for others)
   --wait <ms>       How long to wait for app to load (default: 15000)
-  --port <port>     Port for server mode (default: 9222)
+  --port <port>     Port for server/client mode (default: 9222)
   --xvfb            Run server in virtual display (Linux only)
   --json            Output results as JSON
   --no-auto-wait    Disable auto-wait behavior (not recommended)
   --help, -h        Show help
+
+CLIENT MODE (talk to running server):
+  When --app is omitted, commands automatically connect to a running server.
+  This is the simplest way to interact with your app!
+
+  # 1. Start server once (in background)
+  tauri-driver server --app /path/to/your/tauri-app &
+
+  # 2. Run CLI commands - no --app needed!
+  tauri-driver click "button.submit"
+  tauri-driver type "input[name=email]" "user@example.com"
+  tauri-driver screenshot --output /tmp/screen.png
+  tauri-driver snapshot --output /tmp/dom.yaml
+  tauri-driver eval "document.title"
+  tauri-driver wait ".modal" --gone --timeout 5000
+
+  # Use --port to connect to a different server
+  tauri-driver click "button" --port 8080
 
 SERVER MODE (Recommended for Agents):
   Start a persistent HTTP server - no batching needed!
@@ -322,11 +384,142 @@ async function main() {
     process.exit(result.success ? 0 : 1);
   }
 
+  // Status command - check if server is running (doesn't require app path)
+  if (command === "status") {
+    const port = options.port ? parseInt(options.port as string) : 9222;
+    const running = await isServerRunning(port);
+    if (running) {
+      console.log(`Server is running on port ${port}`);
+      process.exit(0);
+    } else {
+      console.log(`No server running on port ${port}`);
+      process.exit(1);
+    }
+  }
+
+  const appPath = options.app as string;
+  const jsonOutput = !!options.json;
+  const port = options.port ? parseInt(options.port as string) : 9222;
+
+  // Commands that support client mode (talking to running server)
+  const clientModeCommands = ["screenshot", "snapshot", "click", "type", "wait", "eval"];
+
+  // If no --app provided and command supports client mode, use client mode
+  if (!appPath && clientModeCommands.includes(command)) {
+    try {
+      // Check if server is running
+      const serverUp = await isServerRunning(port);
+      if (!serverUp) {
+        console.error(`Error: No server running on port ${port}.`);
+        console.error("");
+        console.error("Either start a server first:");
+        console.error(`  tauri-driver server --app ./target/debug/my-app --port ${port} &`);
+        console.error("");
+        console.error("Or specify --app to run standalone:");
+        console.error(`  tauri-driver ${command} --app ./target/debug/my-app`);
+        process.exit(1);
+      }
+
+      // Build the command object based on the command type
+      let cmd: Record<string, unknown>;
+      switch (command) {
+        case "screenshot":
+          cmd = {
+            cmd: "screenshot",
+            output: options.output as string,
+            fullPage: !!options["full-page"],
+          };
+          break;
+
+        case "snapshot":
+          cmd = {
+            cmd: "snapshot",
+            output: options.output as string,
+          };
+          break;
+
+        case "click":
+          if (!args[0]) {
+            console.error("Error: click requires a selector");
+            process.exit(1);
+          }
+          cmd = {
+            cmd: "click",
+            selector: args[0],
+            timeout: options.timeout ? parseInt(options.timeout as string) : undefined,
+          };
+          break;
+
+        case "type":
+          if (!args[0] || !args[1]) {
+            console.error("Error: type requires <selector> <text>");
+            process.exit(1);
+          }
+          cmd = {
+            cmd: "type",
+            selector: args[0],
+            text: args[1],
+            timeout: options.timeout ? parseInt(options.timeout as string) : undefined,
+          };
+          break;
+
+        case "wait":
+          if (!args[0]) {
+            console.error("Error: wait requires a selector");
+            process.exit(1);
+          }
+          cmd = {
+            cmd: "wait",
+            selector: args[0],
+            timeout: options.timeout ? parseInt(options.timeout as string) : 5000,
+            gone: !!options.gone,
+          };
+          break;
+
+        case "eval":
+          if (!args[0]) {
+            console.error("Error: eval requires a script");
+            process.exit(1);
+          }
+          cmd = {
+            cmd: "eval",
+            script: args[0],
+          };
+          break;
+
+        default:
+          throw new Error(`Unknown command: ${command}`);
+      }
+
+      // Send to server
+      const result = await sendToServer(port, cmd);
+
+      // Output result
+      if (result !== undefined) {
+        if (jsonOutput) {
+          console.log(JSON.stringify(result, null, 2));
+        } else if (typeof result === "string") {
+          console.log(result);
+        } else if (result !== null) {
+          console.log(JSON.stringify(result, null, 2));
+        }
+      }
+      process.exit(0);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (jsonOutput) {
+        console.log(JSON.stringify({ error: message }));
+      } else {
+        console.error(`Error: ${message}`);
+      }
+      process.exit(1);
+    }
+  }
+
   // Verify dependencies before running any command that needs them
   ensureDependencies();
 
-  // App path is required
-  const appPath = options.app as string;
+  // App path is required for non-client-mode commands
   if (!appPath) {
     console.error("Error: --app <path> is required. Specify the path to your Tauri app binary.");
     console.error("");
@@ -336,9 +529,7 @@ async function main() {
     process.exit(1);
   }
   const waitTimeout = options.wait ? parseInt(options.wait as string) : 15000;
-  const jsonOutput = !!options.json;
   const autoWait = !options["no-auto-wait"]; // Default to true
-  const port = options.port ? parseInt(options.port as string) : 9222;
 
   // Server mode - special handling, doesn't follow normal flow
   // Server mode defaults to autoWait=false for speed (no WebDriver throttling issues)

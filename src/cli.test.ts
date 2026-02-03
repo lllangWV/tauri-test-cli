@@ -132,6 +132,27 @@ describe("parseArgs", () => {
       expect(result.options["auto-wait"]).toBe(true);
     });
 
+    test("parses status command with port", () => {
+      const result = parseArgs(["status", "--port", "8080"]);
+      expect(result.command).toBe("status");
+      expect(result.options["port"]).toBe("8080");
+    });
+
+    test("parses client mode commands (no --app)", () => {
+      const result = parseArgs(["click", "button.submit", "--port", "9222"]);
+      expect(result.command).toBe("click");
+      expect(result.args).toEqual(["button.submit"]);
+      expect(result.options["port"]).toBe("9222");
+      expect(result.options["app"]).toBeUndefined();
+    });
+
+    test("parses screenshot in client mode", () => {
+      const result = parseArgs(["screenshot", "--output", "/tmp/screen.png"]);
+      expect(result.command).toBe("screenshot");
+      expect(result.options["output"]).toBe("/tmp/screen.png");
+      expect(result.options["app"]).toBeUndefined();
+    });
+
     test("parses wait command with timeout", () => {
       const result = parseArgs([
         "wait",
