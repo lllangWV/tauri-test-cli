@@ -5,17 +5,53 @@ description = "CLI for testing Tauri applications with screenshot capture, DOM i
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-arm64", "osx-64"]
 
-[tasks]
-# Install bun (if not already installed)
-install-bun = "curl -fsSL https://bun.sh/install | bash"
+# ============================================================================
+# DEPENDENCIES (from conda-forge)
+# ============================================================================
 
-# Install system dependencies (Linux) - requires sudo
-install-system-deps-linux = "sudo apt-get install -y webkit2gtk-driver"
+[dependencies]
+# Rust toolchain (includes cargo)
+rust = ">=1.70"
+
+# Build tools
+pkg-config = ">=0.29"
+openssl = ">=3.0"
+
+# pnpm (fallback if bun not available)
+pnpm = ">=10"
+
+# ============================================================================
+# Linux-specific dependencies
+# ============================================================================
+[target.linux-64.dependencies]
+# WebKit for Tauri (Linux only - macOS uses native WebKit)
+"webkit2gtk4.1" = ">=2.48"
+
+# GTK/GUI stack (needed for Tauri on Linux)
+gtk3 = ">=3.24"
+glib = ">=2.70"
+cairo = ">=1.16"
+pango = ">=1.50"
+atk = ">=2.38"
+gdk-pixbuf = ">=2.42"
+librsvg = ">=2.50"
+libsoup = ">=3.0"
+dbus = ">=1.14"
+
+# ============================================================================
+# TASKS
+# ============================================================================
+
+[tasks]
+# Install bun (not available on conda-forge, uses official installer)
+install-bun = "curl -fsSL https://bun.sh/install | bash"
 
 # Build and development
 build = "bun build ./src/cli.ts --outdir ./dist --target node"
 dev = "bun run ./src/cli.ts"
 typecheck = "bun run tsc --noEmit"
+test = "bun test"
+test-watch = "bun test --watch"
 
 # Install npm dependencies
 install-deps = "bun install"
@@ -23,18 +59,27 @@ install-deps = "bun install"
 # Install tauri-driver from cargo
 install-tauri-driver = "cargo install tauri-driver --locked"
 
-# Full setup (run once after install-system-deps-linux on Linux)
+# Full setup
 setup = { cmd = "echo 'Setup complete! Run: pixi run build'", depends-on = ["install-deps", "install-tauri-driver"] }
+
+# Check if all required tools are available
+check-rust = "rustc --version"
+check-cargo = "cargo --version"
+check-pkg-config = "pkg-config --version"
+check-pnpm = "pnpm --version"
+check-webkit = "pkg-config --modversion webkit2gtk-4.1"
+check-tools = { depends-on = ["check-rust", "check-cargo", "check-pkg-config", "check-pnpm", "check-webkit"] }
 
 [system-requirements]
 libc = { family = "glibc", version = "2.39" }
-
 
 [activation.env]
 # Set up library paths for Tauri/Cargo to find GTK/WebKit within pixi
 PKG_CONFIG_PATH = "$CONDA_PREFIX/lib/pkgconfig:$CONDA_PREFIX/share/pkgconfig"
 LD_LIBRARY_PATH = "$CONDA_PREFIX/lib"
 LIBRARY_PATH = "$CONDA_PREFIX/lib"
+C_INCLUDE_PATH = "$CONDA_PREFIX/include"
+CPLUS_INCLUDE_PATH = "$CONDA_PREFIX/include"
 # WebKit rendering fixes - disable GPU acceleration to avoid EGL/DMABuf issues
 WEBKIT_DISABLE_DMABUF_RENDERER = "1"
 WEBKIT_DISABLE_COMPOSITING_MODE = "1"
