@@ -1,0 +1,19 @@
+
+
+
+<!-- AGENTS-MD-EMBED-START:pixi -->
+[Pixi Docs Index]|root: ./.agdex/pixi|IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any pixi tasks. Pixi is a cross-platform package manager for conda environments.|If docs missing, run: npx agdex --provider pixi --output CLAUDE.md|.:{first_workspace.md,getting_started.md,installation.md}|advanced:{channel_logic.md,explain_info_command.md,override.md,pixi_shell.md,shebang.md}|build:{advanced_cpp.md,backends.md,cpp.md,dependency_types.md,getting_started.md,package_source.md,python.md,ros.md,variants.md,workspace.md}|concepts:{conda_pypi.md}|deployment:{authentication.md,container.md,pixi_pack.md,s3.md}|global_tools:{introduction.md,manifest.md,trampolines.md}|integration/ci:{github_actions.md,updates_github_actions.md}|integration/editor:{jetbrains.md,jupyterlab.md,r_studio.md,vscode.md,zed.md}|integration/extensions:{introduction.md,pixi_diff.md,pixi_inject.md,pixi_install_to_prefix.md}|integration/third_party:{conda_deny.md,direnv.md,starship.md}|misc:{Community.md,FAQ.md,packaging.md,vision.md}|python:{pyproject_toml.md,pytorch.md,tutorial.md}|reference:{environment_variables.md,pixi_configuration.md,pixi_manifest.md}|reference/cli:{pixi.md}|reference/cli/pixi:{add.md,auth.md,build.md,clean.md,completion.md,config.md,exec.md,global.md,import.md,info.md,init.md,install.md,list.md,lock.md,reinstall.md,remove.md,run.md,search.md,self-update.md,shell-hook.md,shell.md,task.md,tree.md,update.md,upgrade.md,upload.md,workspace.md}|reference/cli/pixi/auth:{login.md,logout.md}|reference/cli/pixi/clean:{cache.md}|reference/cli/pixi/config:{append.md,edit.md,list.md,prepend.md,set.md,unset.md}|reference/cli/pixi/global:{add.md,edit.md,expose.md,install.md,list.md,remove.md,shortcut.md,sync.md,tree.md,uninstall.md,update.md,upgrade-all.md,upgrade.md}|reference/cli/pixi/global/expose:{add.md,remove.md}|reference/cli/pixi/global/shortcut:{add.md,remove.md}|reference/cli/pixi/task:{add.md,alias.md,list.md,remove.md}|reference/cli/pixi/upload:{anaconda.md,artifactory.md,conda-forge.md,prefix.md,quetz.md,s3.md}|reference/cli/pixi/workspace:{channel.md,description.md,environment.md,export.md,name.md,platform.md,requires-pixi.md,system-requirements.md,version.md}|reference/cli/pixi/workspace/channel:{add.md,list.md,remove.md}|reference/cli/pixi/workspace/description:{get.md,set.md}|reference/cli/pixi/workspace/environment:{add.md,list.md,remove.md}|reference/cli/pixi/workspace/export:{conda-environment.md,conda-explicit-spec.md}|reference/cli/pixi/workspace/name:{get.md,set.md}|reference/cli/pixi/workspace/platform:{add.md,list.md,remove.md}|reference/cli/pixi/workspace/requires-pixi:{get.md,set.md,unset.md,verify.md}|reference/cli/pixi/workspace/system-requirements:{add.md,list.md}|reference/cli/pixi/workspace/version:{get.md,major.md,minor.md,patch.md,set.md}|switching_from:{conda.md,poetry.md}|tutorials:{import.md,multi_environment.md,ros2.md,rust.md}|workspace:{advanced_tasks.md,environment.md,lockfile.md,multi_environment.md,multi_platform_configuration.md,system_requirements.md}
+<!-- AGENTS-MD-EMBED-END:pixi -->
+
+
+# CLAUDE.md
+
+- Use `bun` as the javascript and typescript package manager
+- Use `cargo` as the Rust package manager
+- Use `pixi` as the system level package manager
+- Run all commands through `pixi run` (add `-e {environment}` for a particular name)
+- Prefer retrieval-led reasoning when using `pixi`
+- Always try to find the package through `pixi` first
+- If you cannot find a library you need through `pixi` run the language associated package manager through pixi
+    - Rust - `pixi run cargo`
+    - Javascript/Typescript `pixi run bun`

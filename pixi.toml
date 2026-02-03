@@ -1,0 +1,40 @@
+[workspace]
+name = "tauri-test-cli"
+version = "0.1.0"
+description = "CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64"]
+
+[tasks]
+# Install bun (if not already installed)
+install-bun = "curl -fsSL https://bun.sh/install | bash"
+
+# Install system dependencies (Linux) - requires sudo
+install-system-deps-linux = "sudo apt-get install -y webkit2gtk-driver"
+
+# Build and development
+build = "bun build ./src/cli.ts --outdir ./dist --target node"
+dev = "bun run ./src/cli.ts"
+typecheck = "bun run tsc --noEmit"
+
+# Install npm dependencies
+install-deps = "bun install"
+
+# Install tauri-driver from cargo
+install-tauri-driver = "cargo install tauri-driver --locked"
+
+# Full setup (run once after install-system-deps-linux on Linux)
+setup = { cmd = "echo 'Setup complete! Run: pixi run build'", depends-on = ["install-deps", "install-tauri-driver"] }
+
+[system-requirements]
+libc = { family = "glibc", version = "2.39" }
+
+
+[activation.env]
+# Set up library paths for Tauri/Cargo to find GTK/WebKit within pixi
+PKG_CONFIG_PATH = "$CONDA_PREFIX/lib/pkgconfig:$CONDA_PREFIX/share/pkgconfig"
+LD_LIBRARY_PATH = "$CONDA_PREFIX/lib"
+LIBRARY_PATH = "$CONDA_PREFIX/lib"
+# WebKit rendering fixes - disable GPU acceleration to avoid EGL/DMABuf issues
+WEBKIT_DISABLE_DMABUF_RENDERER = "1"
+WEBKIT_DISABLE_COMPOSITING_MODE = "1"

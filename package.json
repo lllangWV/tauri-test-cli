@@ -1,0 +1,39 @@
+{
+  "name": "tauri-test-cli",
+  "version": "0.1.0",
+  "description": "CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation",
+  "type": "module",
+  "bin": {
+    "tauri-test": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "tauri",
+    "testing",
+    "webdriver",
+    "automation",
+    "screenshot",
+    "e2e",
+    "cli"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lllangWV/tauri-test-cli"
+  },
+  "scripts": {
+    "build": "bun build ./src/cli.ts --outdir ./dist --target node",
+    "dev": "bun run ./src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "webdriverio": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.3.3"
+  }
+}

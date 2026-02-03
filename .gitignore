@@ -1,0 +1,255 @@
+ macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Local environment files
+*.local.*
+.env
+.env.local
+.env.*.local
+
+# Conda/Pixi environment related
+*.conda
+.pixi/
+.conda/
+conda-bld/
+.conda-env-vars
+
+# Allow conda files in test data
+!tests/data/channels/channels/**/*.conda
+
+# Documentation and site output
+site/
+.build
+docs/_build/
+sphinx/_build/
+
+# Profiling and performance data
+profile.json.gz
+*.prof
+*.pstats
+perf.data*
+massif.out.*
+cachegrind.out.*
+
+# IDE and editor files
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+.emacs.d/
+*.sublime-project
+*.sublime-workspace
+.vs/
+*.code-workspace
+.spyderproject
+.spyproject
+.ropeproject
+*.pyproj
+
+# Operating system files
+*.tmp
+*.temp
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Logs
+*.log
+logs/
+
+# Temporary files and caches
+*.cache
+.cache/
+.tmp/
+tmp/
+temp/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Compiled extensions
+*.so
+*.a
+*.fpp
+*.mod
+*.o
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+pytest-temp/
+.test-projects/
+
+# Translations
+*.mo
+*.pot
+
+# PyBuilder
+target/
+
+# pyenv
+.python-version
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+# mkdocs documentation
+site/
+
+# Type checker and linter caches
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+**/.ipynb_checkpoints/
+
+# Agents
+AGENTS.md
+
+# Security and credentials
+*.pem
+*.key
+*.p12
+.secrets
+secrets.json
+
+# Generated files
+*_pb2.py
+*_pb2_grpc.py
+files.txt
+
+# Data artifacts
+*.npy
+
+# Latex
+*.aux
+
+# Project-specific
+update_package.md
+/data/
+/notes/
+/my_tests/
+/papers/
+/media/
+/sphinx/manim/
+/sphinx/README.md
+sphinx/source/examples/
+github_repos/
+
+*_version.py
+
+
+/models
+
+/thoughts
+
+/ext_pkgs
+
+
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store
+
+# ===================
+# Project-specific (AnnoAssist)
+# ===================
+
+# SvelteKit (symlink at root)
+.svelte-kit
+
+# Vite
+.vite/
+
+# Cursor IDE
+.cursor/
+
+# Claude Code
+.claude/
+
+# Keep lock files for reproducibility
+!bun.lock
+!Cargo.lock
+.playwright-mcp/
+assets/
+# agdex
+.agdex/
+.pixi/
+
