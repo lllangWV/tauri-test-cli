@@ -27,6 +27,10 @@ pnpm = ">=10"
 # WebKit for Tauri (Linux only - macOS uses native WebKit)
 "webkit2gtk4.1" = ">=2.48"
 
+# Note: For xvfb support, install via system package manager:
+#   sudo apt install xvfb  # Debian/Ubuntu
+#   sudo dnf install xorg-x11-server-Xvfb  # Fedora
+
 # GTK/GUI stack (needed for Tauri on Linux)
 gtk3 = ">=3.24"
 glib = ">=2.70"
@@ -37,6 +41,11 @@ gdk-pixbuf = ">=2.42"
 librsvg = ">=2.50"
 libsoup = ">=3.0"
 dbus = ">=1.14"
+zlib = ">=1.2"
+expat = ">=2.5"
+fontconfig = ">=2.14"
+freetype = ">=2.12"
+harfbuzz = ">=8.0"
 
 # ============================================================================
 # TASKS
@@ -50,8 +59,13 @@ install-bun = "curl -fsSL https://bun.sh/install | bash"
 build = "bun build ./src/cli.ts --outdir ./dist --target node"
 dev = "bun run ./src/cli.ts"
 typecheck = "bun run tsc --noEmit"
-test = "bun test"
+
+# Testing
+test = "bun test --timeout 10000"
 test-watch = "bun test --watch"
+test-unit = "bun test src/cli.test.ts src/checks.test.ts src/commands/utils.test.ts --timeout 10000"
+test-integration = "bun test src/integration.test.ts --timeout 60000"
+test-all = { cmd = "bun test --timeout 60000", depends-on = ["test-app-build"] }
 
 # Install npm dependencies
 install-deps = "bun install"
@@ -61,6 +75,68 @@ install-tauri-driver = "cargo install tauri-driver --locked"
 
 # Full setup
 setup = { cmd = "echo 'Setup complete! Run: pixi run build'", depends-on = ["install-deps", "install-tauri-driver"] }
+
+# ============================================================================
+# TESTING (requires a Tauri app binary)
+# Usage: pixi run server -- --app /path/to/your/tauri-app
+# ============================================================================
+
+# Start server (requires --app argument)
+server = "bun run ./src/cli.ts server"
+
+# Start server with xvfb (Linux - avoids focus/throttling issues)
+server-xvfb = "xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bun run ./src/cli.ts server"
+
+# CLI commands (connect to running server on port 9222)
+click = "bun run ./src/cli.ts click"
+type = "bun run ./src/cli.ts type"
+screenshot = "bun run ./src/cli.ts screenshot"
+snapshot = "bun run ./src/cli.ts snapshot"
+eval = "bun run ./src/cli.ts eval"
+wait = "bun run ./src/cli.ts wait"
+
+# Server management
+status = "bun run ./src/cli.ts status"
+stop = "bun run ./src/cli.ts stop"
+cleanup = "bun run ./src/cli.ts cleanup"
+
+# Quick curl commands for testing (assumes server is running)
+curl-status = "curl -s http://127.0.0.1:9222/status"
+curl-stop = "curl -s http://127.0.0.1:9222/stop"
+
+# ============================================================================
+# TEST APP (apps/test-app)
+# ============================================================================
+
+# Build the test app (using bash -c to ensure env vars are inherited)
+test-app-build = "cd apps/test-app/src-tauri && cargo build"
+
+# Run the test app directly (for manual testing)
+test-app-run = { cmd = "cargo run", cwd = "apps/test-app/src-tauri" }
+
+# Start server with test app
+test-server = { cmd = "bun run ./src/cli.ts server --app ./apps/test-app/src-tauri/target/debug/test-app" }
+test-server-xvfb = { cmd = "xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bun run ./src/cli.ts server --app ./apps/test-app/src-tauri/target/debug/test-app" }
+
+# ============================================================================
+# BENCHMARKS (Claude Code headless testing)
+# ============================================================================
+
+# List available benchmark tasks
+benchmark-list = "./benchmarks/run-benchmark.sh --list"
+
+# Run a single benchmark with visualization
+benchmark = "./benchmarks/run-benchmark.sh -v"
+
+# Run all benchmarks
+benchmark-all = { cmd = "./benchmarks/run-benchmark.sh --all", depends-on = ["test-app-build"] }
+
+# Run all benchmarks quietly (just timing)
+benchmark-all-quiet = { cmd = "./benchmarks/run-benchmark.sh --all --quiet", depends-on = ["test-app-build"] }
+
+# Run benchmarks with specific model
+benchmark-opus = { cmd = "./benchmarks/run-benchmark.sh --all -m opus", depends-on = ["test-app-build"] }
+benchmark-haiku = { cmd = "./benchmarks/run-benchmark.sh --all -m haiku", depends-on = ["test-app-build"] }
 
 # Check if all required tools are available
 check-rust = "rustc --version"

@@ -253,3 +253,8 @@ assets/
 .agdex/
 .pixi/
 
+# Benchmark results
+benchmarks/results/
+
+# Test app build artifacts
+apps/test-app/src-tauri/target/

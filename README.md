@@ -16,7 +16,8 @@ tauri-driver check-deps
 
 # Start server and test your app
 tauri-driver server --app ./target/debug/my-app &
-curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/screen.png"}'
+tauri-driver screenshot --output /tmp/screen.png
+tauri-driver click "button.submit"
 ```
 
 ## Installation
@@ -128,10 +129,39 @@ Xvfb :99 -screen 0 1920x1080x24 &
 DISPLAY=:99 tauri-driver server --app ./target/debug/my-app &
 ```
 
+### Client Mode (CLI without --app)
+
+Once the server is running, you can use CLI commands directly - no `--app` needed, no curl required:
+
+```bash
+# Start server once
+tauri-driver server --app ./target/debug/my-app &
+
+# Run commands - they automatically connect to the server!
+tauri-driver click "button.submit"
+tauri-driver type "input[name=email]" "user@example.com"
+tauri-driver screenshot --output /tmp/screen.png
+tauri-driver snapshot --output /tmp/dom.yaml
+tauri-driver eval "document.title"
+tauri-driver wait ".modal" --gone --timeout 5000
+
+# Check server status
+tauri-driver status
+
+# Stop when done
+tauri-driver stop
+```
+
+Use `--port` to connect to a different server:
+
+```bash
+tauri-driver click "button" --port 8080
+```
+
 ### Why Server Mode?
 
 - **No startup delay**: App stays running between commands
-- **Simple HTTP API**: Works with `curl`, `fetch`, or any HTTP client
+- **Simple CLI or HTTP API**: Use CLI commands or `curl`/`fetch`
 - **Instant execution**: No auto-wait delay by default
 
 ## Commands
@@ -152,29 +182,43 @@ DISPLAY=:99 tauri-driver server --app ./target/debug/my-app &
 | Command | Description |
 |---------|-------------|
 | `tauri-driver setup` | Install tauri-driver via cargo |
+| `tauri-driver status [--port]` | Check if a server is running |
 | `tauri-driver stop [--port]` | Stop a running server |
 | `tauri-driver cleanup` | Kill stale WebDriver processes |
 | `tauri-driver check-deps` | Check system dependencies |
 
 ### Examples
 
+**Using CLI (recommended):**
+
 ```bash
 # Click a button
-curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button.submit"}'
+tauri-driver click "button.submit"
 
 # Type into an input
-curl -s http://127.0.0.1:9222 -d '{"cmd":"type","selector":"input[name=email]","text":"user@example.com"}'
+tauri-driver type "input[name=email]" "user@example.com"
 
 # Take screenshot
-curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/screen.png"}'
+tauri-driver screenshot --output /tmp/screen.png
 
 # Get DOM snapshot (accessibility tree in YAML format)
-curl -s http://127.0.0.1:9222 -d '{"cmd":"snapshot","output":"/tmp/dom.yaml"}'
+tauri-driver snapshot --output /tmp/dom.yaml
 
 # Execute JavaScript
-curl -s http://127.0.0.1:9222 -d '{"cmd":"eval","script":"document.title"}'
+tauri-driver eval "document.title"
 
 # Wait for element to disappear
+tauri-driver wait ".modal" --gone --timeout 5000
+```
+
+**Using curl:**
+
+```bash
+curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button.submit"}'
+curl -s http://127.0.0.1:9222 -d '{"cmd":"type","selector":"input[name=email]","text":"user@example.com"}'
+curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/screen.png"}'
+curl -s http://127.0.0.1:9222 -d '{"cmd":"snapshot","output":"/tmp/dom.yaml"}'
+curl -s http://127.0.0.1:9222 -d '{"cmd":"eval","script":"document.title"}'
 curl -s http://127.0.0.1:9222 -d '{"cmd":"wait","selector":".modal","gone":true,"timeout":5000}'
 ```
 
@@ -222,16 +266,147 @@ Use `tauri-driver` CLI for testing the Tauri application.
 ### Start test server
 tauri-driver server --app ./target/debug/my-app --xvfb &
 
-### Available commands via HTTP POST to http://127.0.0.1:9222
-- Click: {"cmd":"click","selector":"button"}
-- Type: {"cmd":"type","selector":"input","text":"hello"}
-- Screenshot: {"cmd":"screenshot","output":"/tmp/screen.png"}
-- Snapshot: {"cmd":"snapshot"}
-- Eval: {"cmd":"eval","script":"document.title"}
-- Wait: {"cmd":"wait","selector":".element"}
+### Available commands (once server is running, no --app needed)
+- Click: `tauri-driver click "button"`
+- Type: `tauri-driver type "input" "hello"`
+- Screenshot: `tauri-driver screenshot --output /tmp/screen.png`
+- Snapshot: `tauri-driver snapshot --output /tmp/dom.yaml`
+- Eval: `tauri-driver eval "document.title"`
+- Wait: `tauri-driver wait ".element" --timeout 5000`
+
+### Check server status
+tauri-driver status
 
 ### Stop server
 tauri-driver stop
+```
+
+## Development
+
+### Setup
+
+```bash
+# Clone and install dependencies
+git clone https://github.com/lllangWV/tauri-driver-cli
+cd tauri-driver-cli
+pixi install
+
+# Build the CLI
+pixi run build
+
+# Build the test app (required for integration tests)
+pixi run test-app-build
+```
+
+### Running Tests
+
+```bash
+# Run all tests (builds test app automatically)
+pixi run test-all
+
+# Run only unit tests (fast, no test app needed)
+pixi run test-unit
+
+# Run only integration tests (requires test app)
+pixi run test-integration
+
+# Watch mode for development
+pixi run test-watch
+```
+
+### Test Structure
+
+| Test File | Description | Count |
+|-----------|-------------|-------|
+| `src/cli.test.ts` | Arg parsing, batch command validation | 50 |
+| `src/checks.test.ts` | Dependency checking | 20 |
+| `src/commands/utils.test.ts` | Utility functions | 6 |
+| `src/integration.test.ts` | End-to-end tests against test app | 30 |
+
+### Test App
+
+A minimal Tauri test app is included in `apps/test-app/` for integration testing:
+
+```bash
+# Build the test app
+pixi run test-app-build
+
+# Run the test app manually
+pixi run test-app-run
+
+# Start tauri-driver server with test app
+pixi run test-server
+```
+
+### Available Pixi Tasks
+
+```bash
+pixi task list   # Show all available tasks
+```
+
+Key development tasks:
+- `pixi run build` - Build the CLI
+- `pixi run dev` - Run CLI in development mode
+- `pixi run typecheck` - Run TypeScript type checking
+- `pixi run test-all` - Run all tests
+- `pixi run test-server` - Start server with test app
+
+### Benchmarks (Claude Code Headless Testing)
+
+Run Claude Code in headless mode to test the CLI and measure performance:
+
+```bash
+# List available benchmark tasks
+pixi run benchmark-list
+
+# Run a single benchmark with visualization
+pixi run benchmark -v screenshot
+
+# Run all benchmarks
+pixi run benchmark-all
+
+# Run all benchmarks quietly (timing only)
+pixi run benchmark-all-quiet
+
+# Run with different models
+pixi run benchmark-opus      # Claude Opus
+pixi run benchmark-haiku     # Claude Haiku
+MODEL=sonnet pixi run benchmark-all  # Explicit model
+```
+
+#### Available Benchmark Tasks
+
+| Task | Description |
+|------|-------------|
+| `screenshot` | Take a screenshot |
+| `click` | Click a button and verify |
+| `type` | Type text into input |
+| `snapshot` | Get DOM snapshot |
+| `eval` | Execute JavaScript |
+| `wait` | Wait for elements |
+| `form-fill` | Fill and submit form |
+| `full-workflow` | Complete end-to-end test |
+
+#### Benchmark Results
+
+Results are saved to `benchmarks/results/` with:
+- Individual task JSON files with timing and token usage
+- Summary JSON with all results from a run
+
+Example output:
+```json
+{
+  "task": "screenshot",
+  "model": "sonnet",
+  "status": "passed",
+  "duration_seconds": 12.5,
+  "tokens": {
+    "input": 1234,
+    "output": 567,
+    "cache_read": 890,
+    "cache_create": 0
+  }
+}
 ```
 
 ## Troubleshooting
@@ -270,7 +445,9 @@ tauri-driver server --app ./target/debug/my-app --xvfb &
 tauri-driver - CLI for testing Tauri applications
 
 USAGE:
-  tauri-driver <command> --app <path-to-tauri-binary> [options]
+  tauri-driver <command> [options]
+
+  When --app is omitted, commands connect to a running server (client mode).
 
 COMMANDS:
   server [--port <port>] [--xvfb]   Start HTTP server for persistent sessions
@@ -281,14 +458,15 @@ COMMANDS:
   wait <selector>                   Wait for an element
   eval <script>                     Execute JavaScript
   batch                             Execute multiple commands from stdin
+  status [--port <port>]            Check if a server is running
   stop [--port <port>]              Stop a running server
   cleanup                           Kill stale WebDriver processes
   setup                             Install tauri-driver via cargo
   check-deps                        Check system dependencies
 
 OPTIONS:
-  --app <path>      Path to Tauri app binary
-  --port <port>     Port for server mode (default: 9222)
+  --app <path>      Path to Tauri app binary (required for server/batch)
+  --port <port>     Port for server/client mode (default: 9222)
   --xvfb            Run server in virtual display (Linux)
   --json            Output results as JSON
   --help, -h        Show help
