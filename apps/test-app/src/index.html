@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tauri Test App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+    }
+    h1 { margin-bottom: 20px; color: #00d9ff; }
+    .container { max-width: 600px; margin: 0 auto; }
+
+    /* Form elements for testing */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; color: #aaa; }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      background: #16213e;
+      color: #fff;
+      font-size: 14px;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+
+    /* Buttons for testing */
+    .buttons { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.1s;
+    }
+    button:hover { transform: scale(1.02); }
+    button:active { transform: scale(0.98); }
+
+    .btn-primary { background: #00d9ff; color: #000; }
+    .btn-secondary { background: #e94560; color: #fff; }
+    .btn-success { background: #0f3460; color: #fff; }
+
+    /* Output area */
+    .output {
+      background: #0f0f23;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 15px;
+      min-height: 100px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 20px;
+    }
+    .output-label { color: #aaa; margin-bottom: 5px; }
+
+    /* List for testing selectors */
+    .item-list { list-style: none; margin: 20px 0; }
+    .item-list li {
+      padding: 10px;
+      background: #16213e;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .item-list li:hover { background: #1a2744; }
+    .item-list li.selected { background: #0f3460; border-left: 3px solid #00d9ff; }
+
+    /* Modal for testing wait/gone */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #16213e;
+      padding: 30px;
+      border-radius: 8px;
+      border: 1px solid #00d9ff;
+      z-index: 100;
+    }
+    .modal.visible { display: block; }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 99;
+    }
+    .overlay.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tauri Driver Test App</h1>
+
+    <!-- Text inputs for type command testing -->
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="Enter username">
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="Enter email">
+    </div>
+
+    <div class="form-group">
+      <label for="message">Message</label>
+      <textarea id="message" name="message" rows="3" placeholder="Enter message"></textarea>
+    </div>
+
+    <!-- Buttons for click command testing -->
+    <div class="buttons">
+      <button class="btn-primary" id="submit-btn" onclick="handleSubmit()">Submit</button>
+      <button class="btn-secondary" id="reset-btn" onclick="handleReset()">Reset</button>
+      <button class="btn-success" id="modal-btn" onclick="showModal()">Show Modal</button>
+    </div>
+
+    <!-- List for selector testing -->
+    <ul class="item-list" id="item-list">
+      <li data-id="1" onclick="selectItem(this)">Item 1</li>
+      <li data-id="2" onclick="selectItem(this)">Item 2</li>
+      <li data-id="3" onclick="selectItem(this)">Item 3</li>
+    </ul>
+
+    <!-- Output area for eval command testing -->
+    <div class="output-label">Output:</div>
+    <div class="output" id="output">Ready for testing...</div>
+  </div>
+
+  <!-- Modal for wait --gone testing -->
+  <div class="overlay" id="overlay" onclick="hideModal()"></div>
+  <div class="modal" id="modal">
+    <h2>Modal Dialog</h2>
+    <p>This modal can be used to test wait --gone</p>
+    <button class="btn-secondary" onclick="hideModal()">Close</button>
+  </div>
+
+  <script>
+    // Expose state for eval testing
+    window.appState = {
+      clicks: 0,
+      submissions: 0,
+      selectedItem: null,
+      formData: {}
+    };
+
+    function log(msg) {
+      const output = document.getElementById('output');
+      const timestamp = new Date().toLocaleTimeString();
+      output.textContent = `[${timestamp}] ${msg}\n` + output.textContent;
+    }
+
+    function handleSubmit() {
+      window.appState.clicks++;
+      window.appState.submissions++;
+      window.appState.formData = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        message: document.getElementById('message').value
+      };
+      log(`Form submitted! Data: ${JSON.stringify(window.appState.formData)}`);
+    }
+
+    function handleReset() {
+      window.appState.clicks++;
+      document.getElementById('username').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('message').value = '';
+      window.appState.formData = {};
+      log('Form reset');
+    }
+
+    function selectItem(el) {
+      window.appState.clicks++;
+      document.querySelectorAll('.item-list li').forEach(li => li.classList.remove('selected'));
+      el.classList.add('selected');
+      window.appState.selectedItem = el.dataset.id;
+      log(`Selected item ${el.dataset.id}`);
+    }
+
+    function showModal() {
+      window.appState.clicks++;
+      document.getElementById('modal').classList.add('visible');
+      document.getElementById('overlay').classList.add('visible');
+      log('Modal shown');
+    }
+
+    function hideModal() {
+      document.getElementById('modal').classList.remove('visible');
+      document.getElementById('overlay').classList.remove('visible');
+      log('Modal hidden');
+    }
+
+    log('App initialized');
+  </script>
+</body>
+</html>
