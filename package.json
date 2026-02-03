@@ -1,10 +1,10 @@
 {
-  "name": "tauri-test-cli",
+  "name": "tauri-driver-cli",
   "version": "0.1.0",
   "description": "CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation",
   "type": "module",
   "bin": {
-    "tauri-test": "./dist/cli.js"
+    "tauri-driver": "./dist/cli.js"
   },
   "files": [
     "dist",
@@ -22,7 +22,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lllangWV/tauri-test-cli"
+    "url": "https://github.com/lllangWV/tauri-driver-cli"
   },
   "scripts": {
     "build": "bun build ./src/cli.ts --outdir ./dist --target node",

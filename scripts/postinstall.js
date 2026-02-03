@@ -42,7 +42,7 @@ if (os.platform() === "linux") {
 
 // Print output
 console.log();
-console.log(`${cyan}${bold}tauri-test-cli${reset} installed successfully!`);
+console.log(`${cyan}${bold}tauri-driver-cli${reset} installed successfully!`);
 console.log();
 
 if (warnings.length > 0) {
@@ -60,10 +60,10 @@ if (warnings.length > 0) {
     console.log();
   }
 
-  console.log(`${dim}Run 'tauri-test --help' for usage information.${reset}`);
+  console.log(`${dim}Run 'tauri-driver --help' for usage information.${reset}`);
 } else {
   console.log(`${green}All dependencies found!${reset}`);
-  console.log(`${dim}Run 'tauri-test --help' to get started.${reset}`);
+  console.log(`${dim}Run 'tauri-driver --help' to get started.${reset}`);
 }
 
 console.log();

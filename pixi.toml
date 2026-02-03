@@ -1,5 +1,5 @@
 [workspace]
-name = "tauri-test-cli"
+name = "tauri-driver-cli"
 version = "0.1.0"
 description = "CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation"
 channels = ["conda-forge"]

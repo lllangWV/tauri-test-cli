@@ -273,9 +273,9 @@ async function injectKeepAlive(): Promise<void> {
           gain.connect(audioCtx.destination);
           oscillator.start();
           (window as any).__keepAliveAudio = { audioCtx, oscillator, gain };
-          console.log("[tauri-test] Keep-alive audio context created");
+          console.log("[tauri-driver] Keep-alive audio context created");
         } catch (e) {
-          console.warn("[tauri-test] Could not create keep-alive audio context:", e);
+          console.warn("[tauri-driver] Could not create keep-alive audio context:", e);
         }
       }
     });
