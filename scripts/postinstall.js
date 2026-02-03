@@ -15,9 +15,10 @@ const warnings = [];
 
 // Check for tauri-driver
 try {
-  execSync("which tauri-driver 2>/dev/null || where tauri-driver 2>nul", {
-    stdio: "ignore",
-  });
+  const checkCmd = os.platform() === "win32"
+    ? "where tauri-driver"
+    : "which tauri-driver";
+  execSync(checkCmd, { stdio: "ignore" });
 } catch {
   warnings.push({
     name: "tauri-driver",
