@@ -1,128 +1,142 @@
-# tauri-test-cli
+# tauri-driver-cli
 
 CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation. Designed for use by AI agents (like Claude Code) to automate testing of Tauri desktop apps.
 
-## Installation
-
-### Using Pixi (Recommended)
-
-Pixi handles all system-level dependencies automatically (WebKit, Rust, Bun).
+## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/lllangWV/tauri-test-cli
-cd tauri-test-cli
-pixi install
+# Install globally
+npm install -g tauri-driver-cli
 
-# Install tauri-driver (one-time setup)
-pixi run install-tauri-driver
+# Install tauri-driver (required)
+tauri-driver setup
 
-# Build the CLI
-pixi run build
+# Check dependencies
+tauri-driver check-deps
+
+# Start server and test your app
+tauri-driver server --app ./target/debug/my-app &
+curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/screen.png"}'
 ```
+
+## Installation
 
 ### Global Install via npm
 
-If you already have the prerequisites installed:
-
 ```bash
-npm install -g tauri-test-cli
+npm install -g tauri-driver-cli
 # or
-bun install -g tauri-test-cli
+bun install -g tauri-driver-cli
+# or
+pnpm install -g tauri-driver-cli
+
+# Then install tauri-driver
+tauri-driver setup
 ```
 
-### Prerequisites (if not using pixi)
+### Using Pixi (Recommended for Development)
+
+Pixi handles all system-level dependencies automatically (WebKit, GTK, Rust).
+
+```bash
+# Clone and install
+git clone https://github.com/lllangWV/tauri-driver-cli
+cd tauri-driver-cli
+pixi install
+
+# Build the CLI
+pixi run build
+
+# Run commands via pixi
+pixi run dev server --app ./target/debug/my-app
+```
+
+### Prerequisites
+
+The CLI will check for missing dependencies and provide install instructions:
+
+```bash
+tauri-driver check-deps
+```
 
 <details>
 <summary>Manual prerequisite installation</summary>
 
-#### 1. Install WebKitWebDriver (Linux)
+#### Linux
 
 ```bash
-sudo apt-get install webkit2gtk-driver
+# WebKit (required)
+sudo apt install libwebkit2gtk-4.1-dev    # Debian/Ubuntu
+sudo dnf install webkit2gtk4.1-devel       # Fedora
+sudo pacman -S webkit2gtk-4.1              # Arch
+
+# Rust and tauri-driver
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+tauri-driver setup
 ```
 
-#### 2. Install tauri-driver
+#### macOS
+
+WebKit is included in macOS. Just install tauri-driver:
 
 ```bash
-cargo install tauri-driver --locked
+tauri-driver setup
 ```
 
-#### 3. Install Bun
+#### Windows
+
+WebView2 is included in Windows 10/11. Just install tauri-driver:
 
 ```bash
-curl -fsSL https://bun.sh/install | bash
+tauri-driver setup
 ```
 
 </details>
 
-## Build Your Tauri App
-
-Your Tauri app must be built before testing:
-
-```bash
-cd your-tauri-project
-cargo build  # or: cargo tauri build
-```
-
 ## Usage
 
-All commands require `--app <path>` to specify your Tauri app binary.
-
-### Server Mode (Recommended for Agents)
+### Server Mode (Recommended)
 
 Start a persistent HTTP server - send commands anytime via HTTP.
 
 ```bash
-# 1. Start server (runs in foreground, use & for background)
-# With pixi:
-pixi run dev server --app ./target/debug/my-app --port 9222 &
+# Start server
+tauri-driver server --app ./target/debug/my-app &
 
-# Or if installed globally:
-tauri-test server --app ./target/debug/my-app --port 9222 &
-
-# 2. Send commands via curl (or any HTTP client)
+# Send commands
 curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button"}'
-curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/result.png"}'
+curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/screen.png"}'
 curl -s http://127.0.0.1:9222 -d '{"cmd":"snapshot"}'
-curl -s http://127.0.0.1:9222 -d '{"cmd":"type","selector":"input","text":"hello"}'
 
-# 3. Check status
+# Check status
 curl -s http://127.0.0.1:9222/status
 
-# 4. Stop server when done
-curl -s http://127.0.0.1:9222/stop
+# Stop server
+tauri-driver stop
+```
+
+#### Virtual Display Mode (Linux)
+
+Run in a virtual display to avoid focus-related throttling:
+
+```bash
+# Using built-in --xvfb flag (recommended)
+tauri-driver server --app ./target/debug/my-app --xvfb &
+
+# Or manually with Xvfb
+Xvfb :99 -screen 0 1920x1080x24 &
+DISPLAY=:99 tauri-driver server --app ./target/debug/my-app &
 ```
 
 ### Why Server Mode?
 
 - **No startup delay**: App stays running between commands
-- **No batching required**: Send commands one at a time, asynchronously
 - **Simple HTTP API**: Works with `curl`, `fetch`, or any HTTP client
 - **Instant execution**: No auto-wait delay by default
 
-Use `--auto-wait` flag if you want DOM stability waiting (can be slower when window unfocused).
+## Commands
 
-### Server Response Format
-
-```json
-{"success": true, "result": {"path": "/tmp/screen.png", "width": 1280, "height": 720}}
-```
-
-On error:
-```json
-{"success": false, "error": "Element not found: .missing"}
-```
-
-### Server Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | POST | Execute a command (JSON body) |
-| `/status` | GET | Check if server is running |
-| `/stop` | GET/POST | Shutdown the server |
-
-## Command Reference
+### Testing Commands
 
 | Command | Required Fields | Optional Fields |
 |---------|----------------|-----------------|
@@ -132,6 +146,15 @@ On error:
 | `snapshot` | - | `output` |
 | `eval` | `script` | - |
 | `wait` | `selector` | `timeout`, `gone` |
+
+### Utility Commands
+
+| Command | Description |
+|---------|-------------|
+| `tauri-driver setup` | Install tauri-driver via cargo |
+| `tauri-driver stop [--port]` | Stop a running server |
+| `tauri-driver cleanup` | Kill stale WebDriver processes |
+| `tauri-driver check-deps` | Check system dependencies |
 
 ### Examples
 
@@ -152,18 +175,19 @@ curl -s http://127.0.0.1:9222 -d '{"cmd":"snapshot","output":"/tmp/dom.yaml"}'
 curl -s http://127.0.0.1:9222 -d '{"cmd":"eval","script":"document.title"}'
 
 # Wait for element to disappear
-curl -s http://127.0.0.1:9222 -d '{"cmd":"wait","selector":".modal","gone":true}'
+curl -s http://127.0.0.1:9222 -d '{"cmd":"wait","selector":".modal","gone":true,"timeout":5000}'
 ```
 
-## Auto-Wait Behavior
+### Server Response Format
 
-Commands automatically wait for the right conditions:
+```json
+{"success": true, "result": {"path": "/tmp/screen.png", "width": 1280, "height": 720}}
+```
 
-- **click/type**: Wait for element to be interactive, then wait for DOM to stabilize
-- **screenshot/snapshot**: Wait for DOM to stabilize before capturing
-
-**In server mode**: Auto-wait is OFF by default for speed. Use `--auto-wait` to enable.
-**In batch/single mode**: Auto-wait is ON by default. Use `--no-auto-wait` to disable.
+On error:
+```json
+{"success": false, "error": "Element not found: .missing"}
+```
 
 ## Batch Mode
 
@@ -173,7 +197,7 @@ For single-invocation workflows with multiple commands:
 echo '[
   {"cmd":"click","selector":"button"},
   {"cmd":"screenshot","output":"/tmp/result.png"}
-]' | pixi run dev batch --app ./target/debug/my-app --json
+]' | tauri-driver batch --app ./target/debug/my-app --json
 ```
 
 ## Single Commands
@@ -181,30 +205,24 @@ echo '[
 Each command starts a fresh session (slower but simpler):
 
 ```bash
-pixi run dev screenshot --app ./target/debug/my-app --output /tmp/screen.png
-pixi run dev click "button#submit" --app ./target/debug/my-app
-pixi run dev snapshot --app ./target/debug/my-app
+tauri-driver screenshot --app ./target/debug/my-app --output /tmp/screen.png
+tauri-driver click "button#submit" --app ./target/debug/my-app
+tauri-driver snapshot --app ./target/debug/my-app
 ```
 
 ## Using with Claude Code
 
-This CLI is designed to be used by AI agents. To give Claude Code access:
-
-1. Clone tauri-test-cli into your project or install globally
-2. Tell Claude about it in your project's CLAUDE.md:
+This CLI is designed for AI agents. Add this to your project's CLAUDE.md:
 
 ```markdown
-# Testing Tauri Apps
+## Testing Tauri Apps
 
-Use `tauri-test` CLI for testing the Tauri application.
+Use `tauri-driver` CLI for testing the Tauri application.
 
-## Setup (one-time)
-cd /path/to/tauri-test-cli && pixi install && pixi run install-tauri-driver && pixi run build
+### Start test server
+tauri-driver server --app ./target/debug/my-app --xvfb &
 
-## Start test server
-pixi run -m /path/to/tauri-test-cli dev server --app ./target/debug/my-app --port 9222 &
-
-## Available commands via HTTP POST to http://127.0.0.1:9222
+### Available commands via HTTP POST to http://127.0.0.1:9222
 - Click: {"cmd":"click","selector":"button"}
 - Type: {"cmd":"type","selector":"input","text":"hello"}
 - Screenshot: {"cmd":"screenshot","output":"/tmp/screen.png"}
@@ -212,38 +230,68 @@ pixi run -m /path/to/tauri-test-cli dev server --app ./target/debug/my-app --por
 - Eval: {"cmd":"eval","script":"document.title"}
 - Wait: {"cmd":"wait","selector":".element"}
 
-## Check status / Stop server
-curl -s http://127.0.0.1:9222/status
-curl -s http://127.0.0.1:9222/stop
+### Stop server
+tauri-driver stop
 ```
 
 ## Troubleshooting
 
 ### "Maximum number of active sessions" Error
 
-Kill stale WebDriver processes:
-
 ```bash
-pkill -f tauri-driver
-pkill -f WebKitWebDriver
+tauri-driver cleanup
 ```
 
 ### Server won't start
 
-Make sure no other instance is running:
+```bash
+tauri-driver stop
+tauri-driver cleanup
+```
+
+### Missing dependencies
 
 ```bash
-curl -s http://127.0.0.1:9222/stop 2>/dev/null || true
-pkill -f tauri-driver
+tauri-driver check-deps
+tauri-driver setup  # Install tauri-driver
 ```
 
 ### Window focus issues (slow commands)
 
-Run in a virtual display to avoid focus-related throttling:
+Use the `--xvfb` flag to run in a virtual display:
 
 ```bash
-Xvfb :99 -screen 0 1280x720x24 &
-DISPLAY=:99 tauri-test server --app ./target/debug/my-app &
+tauri-driver server --app ./target/debug/my-app --xvfb &
+```
+
+## CLI Reference
+
+```
+tauri-driver - CLI for testing Tauri applications
+
+USAGE:
+  tauri-driver <command> --app <path-to-tauri-binary> [options]
+
+COMMANDS:
+  server [--port <port>] [--xvfb]   Start HTTP server for persistent sessions
+  screenshot [--output <path>]      Take a screenshot
+  snapshot [--output <path>]        Get DOM/accessibility tree snapshot
+  click <selector>                  Click an element
+  type <selector> <text>            Type text into an element
+  wait <selector>                   Wait for an element
+  eval <script>                     Execute JavaScript
+  batch                             Execute multiple commands from stdin
+  stop [--port <port>]              Stop a running server
+  cleanup                           Kill stale WebDriver processes
+  setup                             Install tauri-driver via cargo
+  check-deps                        Check system dependencies
+
+OPTIONS:
+  --app <path>      Path to Tauri app binary
+  --port <port>     Port for server mode (default: 9222)
+  --xvfb            Run server in virtual display (Linux)
+  --json            Output results as JSON
+  --help, -h        Show help
 ```
 
 ## License

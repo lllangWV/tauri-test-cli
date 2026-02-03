@@ -8,17 +8,19 @@ import { waitFor } from "./commands/wait.js";
 import { evaluate } from "./commands/eval.js";
 import { startServer } from "./server.js";
 import { ensureDependencies, printDependencyStatus } from "./checks.js";
+import { setup, stopServer, cleanup, checkXvfb, buildXvfbCommand } from "./commands/utils.js";
 
 const HELP = `
-tauri-test - CLI for testing Tauri applications
+tauri-driver - CLI for testing Tauri applications
 
 USAGE:
-  tauri-test <command> --app <path-to-tauri-binary> [options]
+  tauri-driver <command> --app <path-to-tauri-binary> [options]
 
 COMMANDS:
-  server [--port <port>]
+  server [--port <port>] [--xvfb]
       Start HTTP server for persistent sessions (RECOMMENDED FOR AGENTS)
       Keeps app running, accepts commands via HTTP POST
+      Use --xvfb to run in virtual display (Linux, avoids focus issues)
 
   screenshot [--output <path>] [--full-page]
       Take a screenshot of the app window
@@ -41,6 +43,15 @@ COMMANDS:
   batch
       Execute multiple commands in a single session (reads JSON from stdin)
 
+  stop [--port <port>]
+      Stop a running tauri-driver server
+
+  cleanup
+      Kill stale WebDriver processes (tauri-driver, WebKitWebDriver, Xvfb)
+
+  setup
+      Install tauri-driver via cargo
+
   check-deps
       Check if all required system dependencies are installed
 
@@ -48,9 +59,10 @@ COMMANDS:
       Show this help message
 
 OPTIONS:
-  --app <path>      Path to Tauri app binary (REQUIRED)
+  --app <path>      Path to Tauri app binary (REQUIRED for most commands)
   --wait <ms>       How long to wait for app to load (default: 15000)
   --port <port>     Port for server mode (default: 9222)
+  --xvfb            Run server in virtual display (Linux only)
   --json            Output results as JSON
   --no-auto-wait    Disable auto-wait behavior (not recommended)
   --help, -h        Show help
@@ -60,7 +72,7 @@ SERVER MODE (Recommended for Agents):
   Commands execute instantly (no auto-wait by default for speed).
 
   # 1. Start server (runs in foreground, use & for background)
-  tauri-test server --app /path/to/your/tauri-app --port 9222 &
+  tauri-driver server --app /path/to/your/tauri-app --port 9222 &
 
   # 2. Send commands anytime via curl - executes instantly!
   curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button"}'
@@ -83,17 +95,29 @@ AUTO-WAIT BEHAVIOR (batch mode only by default):
   curl -s http://127.0.0.1:9222 -d '{"cmd":"wait","selector":".element","timeout":3000}'
 
 EXAMPLES:
+  # First-time setup
+  tauri-driver setup                    # Install tauri-driver via cargo
+  tauri-driver check-deps               # Verify all dependencies
+
   # Server mode (best for agents)
-  tauri-test server --app ./target/debug/my-tauri-app &
+  tauri-driver server --app ./target/debug/my-tauri-app &
   curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button"}'
   curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/result.png"}'
 
+  # Server in virtual display (Linux - avoids focus/throttling issues)
+  tauri-driver server --app ./target/debug/my-tauri-app --xvfb &
+
+  # Stop server and cleanup
+  tauri-driver stop                     # Stop server on default port
+  tauri-driver stop --port 8080         # Stop server on custom port
+  tauri-driver cleanup                  # Kill stale WebDriver processes
+
   # Batch mode (single invocation)
-  echo '[{"cmd":"click","selector":"button"},{"cmd":"screenshot","output":"/tmp/result.png"}]' | tauri-test batch --app ./target/debug/my-tauri-app --json
+  echo '[{"cmd":"click","selector":"button"},{"cmd":"screenshot","output":"/tmp/result.png"}]' | tauri-driver batch --app ./target/debug/my-tauri-app --json
 
   # Single commands
-  tauri-test screenshot --app ./target/debug/my-tauri-app --output /tmp/screen.png
-  tauri-test click "button#submit" --app ./target/debug/my-tauri-app
+  tauri-driver screenshot --app ./target/debug/my-tauri-app --output /tmp/screen.png
+  tauri-driver click "button#submit" --app ./target/debug/my-tauri-app
 `;
 
 interface ParsedArgs {
@@ -279,7 +303,26 @@ async function main() {
     process.exit(missing ? 0 : 1);
   }
 
-  // Verify dependencies before running any command
+  // Setup command - install tauri-driver (doesn't require deps check first)
+  if (command === "setup") {
+    const result = await setup();
+    process.exit(result.success ? 0 : 1);
+  }
+
+  // Stop command - stop running server (doesn't require app path)
+  if (command === "stop") {
+    const port = options.port ? parseInt(options.port as string) : 9222;
+    const result = await stopServer(port);
+    process.exit(result.success ? 0 : 1);
+  }
+
+  // Cleanup command - kill stale processes (doesn't require app path)
+  if (command === "cleanup") {
+    const result = await cleanup();
+    process.exit(result.success ? 0 : 1);
+  }
+
+  // Verify dependencies before running any command that needs them
   ensureDependencies();
 
   // App path is required
@@ -288,8 +331,8 @@ async function main() {
     console.error("Error: --app <path> is required. Specify the path to your Tauri app binary.");
     console.error("");
     console.error("Example:");
-    console.error("  tauri-test server --app ./target/debug/my-app");
-    console.error("  tauri-test screenshot --app ./target/debug/my-app --output /tmp/screen.png");
+    console.error("  tauri-driver server --app ./target/debug/my-app");
+    console.error("  tauri-driver screenshot --app ./target/debug/my-app --output /tmp/screen.png");
     process.exit(1);
   }
   const waitTimeout = options.wait ? parseInt(options.wait as string) : 15000;
@@ -302,6 +345,40 @@ async function main() {
   // User can enable with --auto-wait flag
   if (command === "server") {
     const serverAutoWait = !!options["auto-wait"]; // Default false in server mode
+    const useXvfb = !!options["xvfb"];
+
+    // If --xvfb flag is set, re-run ourselves wrapped in xvfb-run
+    if (useXvfb) {
+      if (process.platform === "win32") {
+        console.error("Error: --xvfb is not supported on Windows");
+        process.exit(1);
+      }
+
+      if (!checkXvfb()) {
+        console.error("Error: xvfb-run not found. Install with:");
+        console.error("  sudo apt install xvfb  # Debian/Ubuntu");
+        console.error("  sudo dnf install xorg-x11-server-Xvfb  # Fedora");
+        process.exit(1);
+      }
+
+      // Build the command without --xvfb to avoid infinite loop
+      const args = process.argv.slice(2).filter((arg) => arg !== "--xvfb");
+      const xvfbArgs = buildXvfbCommand([process.argv[0], process.argv[1], ...args]);
+
+      console.error("Starting server in virtual display (xvfb)...");
+      console.error(`Running: ${xvfbArgs.join(" ")}`);
+
+      const proc = Bun.spawn(xvfbArgs, {
+        stdout: "inherit",
+        stderr: "inherit",
+        stdin: "inherit",
+      });
+
+      // Wait for the process to exit
+      const exitCode = await proc.exited;
+      process.exit(exitCode);
+    }
+
     try {
       await startServer({ port, appPath, waitTimeout, autoWait: serverAutoWait });
     } catch (err) {
