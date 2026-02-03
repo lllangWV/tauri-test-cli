@@ -258,3 +258,4 @@ benchmarks/results/
 
 # Test app build artifacts
 apps/test-app/src-tauri/target/
+apps/test-app/src-tauri/gen/
