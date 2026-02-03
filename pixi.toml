@@ -146,6 +146,19 @@ check-pnpm = "pnpm --version"
 check-webkit = "pkg-config --modversion webkit2gtk-4.1"
 check-tools = { depends-on = ["check-rust", "check-cargo", "check-pkg-config", "check-pnpm", "check-webkit"] }
 
+# ============================================================================
+# VERSION & PUBLISHING
+# ============================================================================
+
+# Bump version (usage: pixi run bump -- patch|minor|major|x.y.z)
+bump = "./scripts/bump-version.sh"
+bump-patch = "./scripts/bump-version.sh patch"
+bump-minor = "./scripts/bump-version.sh minor"
+bump-major = "./scripts/bump-version.sh major"
+
+# Publish to npm (interactive - asks for version bump type)
+publish = "./scripts/publish.sh"
+
 [system-requirements]
 libc = { family = "glibc", version = "2.39" }
 
