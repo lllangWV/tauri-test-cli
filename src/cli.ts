@@ -7,6 +7,7 @@ import { type as typeText } from "./commands/type.js";
 import { waitFor } from "./commands/wait.js";
 import { evaluate } from "./commands/eval.js";
 import { startServer } from "./server.js";
+import { ensureDependencies, printDependencyStatus } from "./checks.js";
 
 const HELP = `
 tauri-test - CLI for testing Tauri applications
@@ -39,6 +40,9 @@ COMMANDS:
 
   batch
       Execute multiple commands in a single session (reads JSON from stdin)
+
+  check-deps
+      Check if all required system dependencies are installed
 
   help
       Show this help message
@@ -267,6 +271,16 @@ async function main() {
     console.log(HELP);
     process.exit(0);
   }
+
+  // Check dependencies command
+  if (command === "check-deps") {
+    printDependencyStatus();
+    const missing = ensureDependencies(false);
+    process.exit(missing ? 0 : 1);
+  }
+
+  // Verify dependencies before running any command
+  ensureDependencies();
 
   // App path is required
   const appPath = options.app as string;
