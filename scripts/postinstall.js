@@ -61,10 +61,10 @@ if (warnings.length > 0) {
     console.log();
   }
 
-  console.log(`${dim}Run 'tauri-test --help' for usage information.${reset}`);
+  console.log(`${dim}Run 'tauri-test-cli --help' for usage information.${reset}`);
 } else {
   console.log(`${green}All dependencies found!${reset}`);
-  console.log(`${dim}Run 'tauri-test --help' to get started.${reset}`);
+  console.log(`${dim}Run 'tauri-test-cli --help' to get started.${reset}`);
 }
 
 console.log();

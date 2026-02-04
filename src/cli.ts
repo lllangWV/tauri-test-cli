@@ -30,7 +30,7 @@ async function sendToServer(port: number, cmd: Record<string, unknown>): Promise
     return await response.json();
   } catch (err) {
     if (err instanceof TypeError && (err.message.includes("fetch") || err.message.includes("ECONNREFUSED"))) {
-      throw new Error(`No server running on port ${port}. Start one with: tauri-test server --app <path> --port ${port}`);
+      throw new Error(`No server running on port ${port}. Start one with: tauri-test-cli server --app <path> --port ${port}`);
     }
     throw err;
   }
@@ -52,10 +52,10 @@ async function isServerRunning(port: number): Promise<boolean> {
 }
 
 const HELP = `
-tauri-test - CLI for testing Tauri applications
+tauri-test-cli - CLI for testing Tauri applications
 
 USAGE:
-  tauri-test <command> --app <path-to-tauri-binary> [options]
+  tauri-test-cli <command> --app <path-to-tauri-binary> [options]
 
 COMMANDS:
   server [--port <port>] [--xvfb]
@@ -85,16 +85,16 @@ COMMANDS:
       Execute multiple commands in a single session (reads JSON from stdin)
 
   stop [--port <port>]
-      Stop a running tauri-test server
+      Stop a running tauri-test-cli server
 
   status [--port <port>]
       Check if a server is running
 
   cleanup
-      Kill stale WebDriver processes (tauri-test, WebKitWebDriver, Xvfb)
+      Kill stale WebDriver processes (tauri-driver, WebKitWebDriver, Xvfb)
 
   setup
-      Install tauri-test via cargo
+      Install tauri-driver via cargo
 
   check-deps
       Check if all required system dependencies are installed
@@ -116,25 +116,25 @@ CLIENT MODE (talk to running server):
   This is the simplest way to interact with your app!
 
   # 1. Start server once (in background)
-  tauri-test server --app /path/to/your/tauri-app &
+  tauri-test-cli server --app /path/to/your/tauri-app &
 
   # 2. Run CLI commands - no --app needed!
-  tauri-test click "button.submit"
-  tauri-test type "input[name=email]" "user@example.com"
-  tauri-test screenshot --output /tmp/screen.png
-  tauri-test snapshot --output /tmp/dom.yaml
-  tauri-test eval "document.title"
-  tauri-test wait ".modal" --gone --timeout 5000
+  tauri-test-cli click "button.submit"
+  tauri-test-cli type "input[name=email]" "user@example.com"
+  tauri-test-cli screenshot --output /tmp/screen.png
+  tauri-test-cli snapshot --output /tmp/dom.yaml
+  tauri-test-cli eval "document.title"
+  tauri-test-cli wait ".modal" --gone --timeout 5000
 
   # Use --port to connect to a different server
-  tauri-test click "button" --port 8080
+  tauri-test-cli click "button" --port 8080
 
 SERVER MODE (Recommended for Agents):
   Start a persistent HTTP server - no batching needed!
   Commands execute instantly (no auto-wait by default for speed).
 
   # 1. Start server (runs in foreground, use & for background)
-  tauri-test server --app /path/to/your/tauri-app --port 9222 &
+  tauri-test-cli server --app /path/to/your/tauri-app --port 9222 &
 
   # 2. Send commands anytime via curl - executes instantly!
   curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button"}'
@@ -158,28 +158,28 @@ AUTO-WAIT BEHAVIOR (batch mode only by default):
 
 EXAMPLES:
   # First-time setup
-  tauri-test setup                    # Install tauri-test via cargo
-  tauri-test check-deps               # Verify all dependencies
+  tauri-test-cli setup                # Install tauri-driver via cargo
+  tauri-test-cli check-deps           # Verify all dependencies
 
   # Server mode (best for agents)
-  tauri-test server --app ./target/debug/my-tauri-app &
+  tauri-test-cli server --app ./target/debug/my-tauri-app &
   curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button"}'
   curl -s http://127.0.0.1:9222 -d '{"cmd":"screenshot","output":"/tmp/result.png"}'
 
   # Server in virtual display (Linux - avoids focus/throttling issues)
-  tauri-test server --app ./target/debug/my-tauri-app --xvfb &
+  tauri-test-cli server --app ./target/debug/my-tauri-app --xvfb &
 
   # Stop server and cleanup
-  tauri-test stop                     # Stop server on default port
-  tauri-test stop --port 8080         # Stop server on custom port
-  tauri-test cleanup                  # Kill stale WebDriver processes
+  tauri-test-cli stop                 # Stop server on default port
+  tauri-test-cli stop --port 8080     # Stop server on custom port
+  tauri-test-cli cleanup              # Kill stale WebDriver processes
 
   # Batch mode (single invocation)
-  echo '[{"cmd":"click","selector":"button"},{"cmd":"screenshot","output":"/tmp/result.png"}]' | tauri-test batch --app ./target/debug/my-tauri-app --json
+  echo '[{"cmd":"click","selector":"button"},{"cmd":"screenshot","output":"/tmp/result.png"}]' | tauri-test-cli batch --app ./target/debug/my-tauri-app --json
 
   # Single commands
-  tauri-test screenshot --app ./target/debug/my-tauri-app --output /tmp/screen.png
-  tauri-test click "button#submit" --app ./target/debug/my-tauri-app
+  tauri-test-cli screenshot --app ./target/debug/my-tauri-app --output /tmp/screen.png
+  tauri-test-cli click "button#submit" --app ./target/debug/my-tauri-app
 `;
 
 interface ParsedArgs {
@@ -365,7 +365,7 @@ async function main() {
     process.exit(missing ? 0 : 1);
   }
 
-  // Setup command - install tauri-test (doesn't require deps check first)
+  // Setup command - install tauri-driver (doesn't require deps check first)
   if (command === "setup") {
     const result = await setup();
     process.exit(result.success ? 0 : 1);
@@ -413,10 +413,10 @@ async function main() {
         console.error(`Error: No server running on port ${port}.`);
         console.error("");
         console.error("Either start a server first:");
-        console.error(`  tauri-test server --app ./target/debug/my-app --port ${port} &`);
+        console.error(`  tauri-test-cli server --app ./target/debug/my-app --port ${port} &`);
         console.error("");
         console.error("Or specify --app to run standalone:");
-        console.error(`  tauri-test ${command} --app ./target/debug/my-app`);
+        console.error(`  tauri-test-cli ${command} --app ./target/debug/my-app`);
         process.exit(1);
       }
 
@@ -524,8 +524,8 @@ async function main() {
     console.error("Error: --app <path> is required. Specify the path to your Tauri app binary.");
     console.error("");
     console.error("Example:");
-    console.error("  tauri-test server --app ./target/debug/my-app");
-    console.error("  tauri-test screenshot --app ./target/debug/my-app --output /tmp/screen.png");
+    console.error("  tauri-test-cli server --app ./target/debug/my-app");
+    console.error("  tauri-test-cli screenshot --app ./target/debug/my-app --output /tmp/screen.png");
     process.exit(1);
   }
   const waitTimeout = options.wait ? parseInt(options.wait as string) : 15000;

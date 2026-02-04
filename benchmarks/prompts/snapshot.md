@@ -4,7 +4,7 @@ You are testing a Tauri application using the `tauri-test-cli` tool. The test ap
 
 ## Task
 
-1. Start the tauri-test server with the test app
+1. Start the tauri-test-cli server with the test app
 2. Wait for the server to be ready
 3. Get a DOM snapshot and save it to `/tmp/benchmark-snapshot.yaml`
 4. Verify the snapshot contains expected elements (like "Username", "Submit")

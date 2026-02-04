@@ -4,7 +4,7 @@
   "description": "CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation",
   "type": "module",
   "bin": {
-    "tauri-test": "./dist/cli.js"
+    "tauri-test-cli": "./dist/cli.js"
   },
   "files": [
     "dist",

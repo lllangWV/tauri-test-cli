@@ -7,7 +7,7 @@ You are testing a Tauri application using the `tauri-test-cli` tool. The test ap
 You have access to these commands through `pixi run`:
 
 ### Server Management
-- `pixi run test-server` - Start the tauri-test server with the test app
+- `pixi run test-server` - Start the tauri-test-cli server with the test app
 - `pixi run status` - Check if server is running
 - `pixi run stop` - Stop the server
 - `pixi run cleanup` - Kill stale WebDriver processes

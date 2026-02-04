@@ -4,7 +4,7 @@ You are testing a Tauri application using the `tauri-test-cli` tool. The test ap
 
 ## Task
 
-1. Start the tauri-test server with the test app
+1. Start the tauri-test-cli server with the test app
 2. Wait for the server to be ready
 3. Take a screenshot and save it to `/tmp/benchmark-screenshot.png`
 4. Verify the screenshot was created

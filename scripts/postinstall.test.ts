@@ -49,7 +49,7 @@ describe("postinstall script", () => {
     });
 
     const output = result.stdout.toString();
-    expect(output).toContain("tauri-test");
+    expect(output).toContain("tauri-test-cli");
   });
 });
 

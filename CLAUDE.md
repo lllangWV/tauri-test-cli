@@ -37,7 +37,7 @@ Open `assets/` folder to test with sample images.
 
 ## Visual Testing
 
-To verify tauri-test cli works correctly, read `skills/tauri-test-cli/visual_testing.md` for tauri-test-cli usage.
+To verify tauri-test-cli works correctly, read `skills/tauri-test-cli/SKILL.md` for usage.
 
 
 ## A Note To The Agent

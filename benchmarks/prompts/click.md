@@ -4,7 +4,7 @@ You are testing a Tauri application using the `tauri-test-cli` tool. The test ap
 
 ## Task
 
-1. Start the tauri-test server with the test app
+1. Start the tauri-test-cli server with the test app
 2. Wait for the server to be ready
 3. Click the submit button (`#submit-btn`)
 4. Verify the click was registered by checking `window.appState.clicks`
