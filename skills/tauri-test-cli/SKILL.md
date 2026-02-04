@@ -7,79 +7,117 @@ description: Use when needing to visually verify Tauri app behavior, test UI int
 
 Visual testing CLI for Tauri apps. Start server once, send commands anytime.
 
-## Installation
+## Before You Start
+
+**IMPORTANT:** Always use a package runner - never bare `tauri-test-cli`:
+- `npx tauri-test-cli` (npm)
+- `bunx tauri-test-cli` (bun)
+- `pnpm dlx tauri-test-cli` (pnpm)
+
+Use whichever runtime the project prefers (check package.json scripts or lockfiles).
+
+### 1. Check Prerequisites
 
 ```bash
-npm i -g tauri-test-cli   # Global install
-npm i tauri-test-cli      # Local install (use with npx)
-npx tauri-test-cli ...    # No install needed
+# Check if tauri-driver is installed
+npx tauri-test-cli check-deps
+```
+
+If tauri-driver is missing:
+```bash
+npx tauri-test-cli setup   # Installs tauri-driver via cargo
+```
+
+### 2. For Dev-Mode Apps
+
+If testing a debug build that uses a dev server (vite, webpack, etc.):
+- The frontend dev server MUST be running first
+- Check project's package.json for dev command (e.g., `npm run dev`, `pnpm dev`)
+- Look for "Connection refused" errors in screenshots = frontend not running
+
+### 3. Find the App Binary
+
+```bash
+# Common locations:
+./target/debug/app-name           # Rust/Tauri debug build
+./target/release/app-name         # Rust/Tauri release build
+./src-tauri/target/debug/app-name # If src-tauri is nested
 ```
 
 ## Quick Reference
 
 | Action | Command |
 |--------|---------|
-| Status | `tauri-test-cli status` |
-| Start server | `tauri-test-cli server --app ./path/to/app --xvfb &` |
-| Click | `tauri-test-cli click "selector"` |
-| Type | `tauri-test-cli type "selector" "text"` |
-| Screenshot | `tauri-test-cli screenshot --output /tmp/screen.png` |
-| DOM snapshot | `tauri-test-cli snapshot --output /tmp/dom.yaml` |
-| Wait appear | `tauri-test-cli wait "selector" --timeout 3000` |
-| Wait gone | `tauri-test-cli wait "selector" --gone --timeout 5000` |
-| Eval JS | `tauri-test-cli eval "document.title"` |
-| Stop | `tauri-test-cli stop` |
+| Check deps | `npx tauri-test-cli check-deps` |
+| Status | `npx tauri-test-cli status` |
+| Start server | `npx tauri-test-cli server --app ./path/to/app --xvfb &` |
+| Click | `npx tauri-test-cli click "selector"` |
+| Type | `npx tauri-test-cli type "selector" "text"` |
+| Screenshot | `npx tauri-test-cli screenshot --output /tmp/screen.png` |
+| DOM snapshot | `npx tauri-test-cli snapshot --output /tmp/dom.yaml` |
+| Wait appear | `npx tauri-test-cli wait "selector" --timeout 3000` |
+| Wait gone | `npx tauri-test-cli wait "selector" --gone --timeout 5000` |
+| Eval JS | `npx tauri-test-cli eval "document.title"` |
+| Stop | `npx tauri-test-cli stop` |
+| Cleanup | `npx tauri-test-cli cleanup` |
 
 ## Workflow
 
 ```bash
-# 1. Check/start server
-tauri-test-cli status
-tauri-test-cli server --app ./path/to/app --xvfb &
-# Wait for: {"status":"ready","port":9222}
+# 1. Check prerequisites
+npx tauri-test-cli check-deps
 
-# 2. Run commands (auto-connect to server)
-tauri-test-cli click "button"
-tauri-test-cli screenshot --output /tmp/screen.png
+# 2. Clean up any stale processes
+npx tauri-test-cli cleanup
 
-# 3. View results with Read tool
-# 4. Cleanup when done
-tauri-test-cli stop
+# 3. Start server (use --xvfb on Linux for headless)
+npx tauri-test-cli server --app ./target/debug/my-app --xvfb &
+
+# 4. Wait for ready message, then check status
+sleep 5
+npx tauri-test-cli status
+
+# 5. Take initial screenshot to verify app loaded correctly
+npx tauri-test-cli screenshot --output /tmp/initial.png
+# Use Read tool to view the screenshot!
+
+# 6. Run test commands
+npx tauri-test-cli click "button"
+npx tauri-test-cli screenshot --output /tmp/after-click.png
+
+# 7. Cleanup when done
+npx tauri-test-cli stop
 ```
+
+## Troubleshooting Screenshots
+
+| What You See | Cause | Fix |
+|--------------|-------|-----|
+| "Connection refused" | Frontend dev server not running | Start frontend: `npm run dev` |
+| Blank/white screen | App not loaded yet | Increase wait time, check --wait flag |
+| "tauri-driver not found" | Missing dependency | Run `npx tauri-test-cli setup` |
+| "Maximum sessions" error | Stale processes | Run `npx tauri-test-cli cleanup` |
 
 ## Screenshot vs Snapshot
 
-```dot
-digraph choice {
-    "Need visual verification?" [shape=diamond];
-    "Canvas or dynamic content?" [shape=diamond];
-    "Use screenshot" [shape=box];
-    "Use DOM snapshot" [shape=box];
-
-    "Need visual verification?" -> "Canvas or dynamic content?" [label="yes"];
-    "Canvas or dynamic content?" -> "Use DOM snapshot" [label="yes"];
-    "Canvas or dynamic content?" -> "Use screenshot" [label="no"];
-}
-```
-
-- **Screenshot**: Visual appearance, layout verification
-- **DOM snapshot**: Element existence, text content, state verification
-- **Canvas limitation**: Screenshots can't capture `<canvas>` - use snapshots
+- **Screenshot**: Visual appearance, layout, colors
+- **DOM snapshot**: Element existence, text content, attributes
+- **Use snapshot** for canvas elements (screenshots can't capture canvas)
 
 ## Common Pattern: Form Test
 
 ```bash
-tauri-test-cli type "input[name=email]" "user@test.com"
-tauri-test-cli click "button[type=submit]"
-tauri-test-cli wait ".loading" --timeout 3000
-tauri-test-cli wait ".loading" --gone --timeout 5000
-tauri-test-cli snapshot --output /tmp/result.yaml
+npx tauri-test-cli type "input[name=email]" "user@test.com"
+npx tauri-test-cli click "button[type=submit]"
+npx tauri-test-cli wait ".loading" --timeout 3000
+npx tauri-test-cli wait ".loading" --gone --timeout 5000
+npx tauri-test-cli snapshot --output /tmp/result.yaml
 ```
 
 ## Cleanup (if stuck)
 
 ```bash
-tauri-test-cli stop
-tauri-test-cli cleanup
-pkill Xvfb 2>/dev/null
+npx tauri-test-cli stop
+npx tauri-test-cli cleanup
+pkill Xvfb 2>/dev/null   # Linux only
 ```
