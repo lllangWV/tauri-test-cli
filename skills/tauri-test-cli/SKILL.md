@@ -7,6 +7,18 @@ description: Use when needing to visually verify Tauri app behavior, test UI int
 
 Visual testing CLI for Tauri apps. Start server once, send commands anytime.
 
+## Installation & Command Usage
+
+The npm package is `tauri-test-cli`, the binary command is `tauri-test`.
+
+| Installation Method | How to Run Commands |
+|---------------------|---------------------|
+| Global: `npm i -g tauri-test-cli` | `tauri-test status` |
+| Local: `npm i tauri-test-cli` | `npx tauri-test status` |
+| No install | `npx tauri-test-cli status` |
+
+**Note:** Without local/global install, use `npx tauri-test-cli <command>` (the full package name).
+
 ## Quick Reference
 
 | Action | Command |
