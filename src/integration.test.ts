@@ -3,7 +3,7 @@ import { existsSync } from "fs";
 import { join } from "path";
 
 /**
- * Integration tests for tauri-driver-cli
+ * Integration tests for tauri-test-cli
  *
  * These tests run the actual CLI against the test app in apps/test-app.
  * They require the test app to be built first:
@@ -45,7 +45,7 @@ describe("Integration Tests", () => {
     test("help command", async () => {
       const { stdout, exitCode } = await runCli("help");
       expect(exitCode).toBe(0);
-      expect(stdout).toContain("tauri-driver");
+      expect(stdout).toContain("tauri-test");
       expect(stdout).toContain("USAGE:");
       expect(stdout).toContain("COMMANDS:");
     });
@@ -53,7 +53,7 @@ describe("Integration Tests", () => {
     test("--help flag", async () => {
       const { stdout, exitCode } = await runCli("--help");
       expect(exitCode).toBe(0);
-      expect(stdout).toContain("tauri-driver");
+      expect(stdout).toContain("tauri-test");
     });
 
     test("check-deps command", async () => {
@@ -83,7 +83,7 @@ describe("Client Mode without Server", () => {
     const { stderr, exitCode } = await runCli("click", "button", "--port", String(PORT));
     expect(exitCode).toBe(1);
     expect(stderr).toContain("No server running");
-    expect(stderr).toContain("tauri-driver server");
+    expect(stderr).toContain("tauri-test server");
   });
 
   test("suggests starting server", async () => {

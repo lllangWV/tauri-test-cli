@@ -1,10 +1,10 @@
 # Take a Screenshot
 
-You are testing a Tauri application using the `tauri-driver-cli` tool. The test app is already built.
+You are testing a Tauri application using the `tauri-test-cli` tool. The test app is already built.
 
 ## Task
 
-1. Start the tauri-driver server with the test app
+1. Start the tauri-test server with the test app
 2. Wait for the server to be ready
 3. Take a screenshot and save it to `/tmp/benchmark-screenshot.png`
 4. Verify the screenshot was created

@@ -146,7 +146,7 @@ export async function disconnect(): Promise<void> {
  */
 export function requireBrowser(): Browser {
   if (!browser) {
-    throw new Error("Not connected. Run 'tauri-driver connect' first.");
+    throw new Error("Not connected. Run 'tauri-test connect' first.");
   }
   return browser;
 }

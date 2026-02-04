@@ -188,4 +188,4 @@ echo -e "${CYAN}╚════════════════════�
 echo ""
 echo -e "${GREEN}Version:${NC} $NEW_VERSION"
 echo -e "${GREEN}Tag:${NC}     v$NEW_VERSION"
-echo -e "${GREEN}npm:${NC}     https://www.npmjs.com/package/tauri-driver-cli"
+echo -e "${GREEN}npm:${NC}     https://www.npmjs.com/package/tauri-test-cli"

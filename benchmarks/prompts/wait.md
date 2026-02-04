@@ -1,10 +1,10 @@
 # Wait for Elements
 
-You are testing a Tauri application using the `tauri-driver-cli` tool. The test app is already built.
+You are testing a Tauri application using the `tauri-test-cli` tool. The test app is already built.
 
 ## Task
 
-1. Start the tauri-driver server with the test app
+1. Start the tauri-test server with the test app
 2. Wait for the server to be ready
 3. Use the wait command to verify the `#output` element exists
 4. Use the wait command with `--gone` to verify `#modal.visible` does NOT exist (modal is hidden)

@@ -1,12 +1,12 @@
 # Complete Testing Workflow
 
-You are testing a Tauri application using the `tauri-driver-cli` tool. The test app is already built.
+You are testing a Tauri application using the `tauri-test-cli` tool. The test app is already built.
 
 ## Task
 
 Perform a complete end-to-end test of the application:
 
-1. Start the tauri-driver server with the test app
+1. Start the tauri-test server with the test app
 2. Wait for the server to be ready
 3. Take an initial screenshot (`/tmp/benchmark-initial.png`)
 4. Get a DOM snapshot to understand the page structure

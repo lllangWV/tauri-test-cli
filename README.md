@@ -1,4 +1,4 @@
-# tauri-driver-cli
+# tauri-test-cli
 
 CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation. Designed for use by AI agents (like Claude Code) to automate testing of Tauri desktop apps.
 
@@ -6,18 +6,18 @@ CLI for testing Tauri applications with screenshot capture, DOM inspection, and 
 
 ```bash
 # Install globally
-npm install -g tauri-driver-cli
+npm install -g tauri-test-cli
 
-# Install tauri-driver (required)
-tauri-driver setup
+# Install tauri-test (required)
+tauri-test setup
 
 # Check dependencies
-tauri-driver check-deps
+tauri-test check-deps
 
 # Start server and test your app
-tauri-driver server --app ./target/debug/my-app &
-tauri-driver screenshot --output /tmp/screen.png
-tauri-driver click "button.submit"
+tauri-test server --app ./target/debug/my-app &
+tauri-test screenshot --output /tmp/screen.png
+tauri-test click "button.submit"
 ```
 
 ## Installation
@@ -25,14 +25,14 @@ tauri-driver click "button.submit"
 ### Global Install via npm
 
 ```bash
-npm install -g tauri-driver-cli
+npm install -g tauri-test-cli
 # or
-bun install -g tauri-driver-cli
+bun install -g tauri-test-cli
 # or
-pnpm install -g tauri-driver-cli
+pnpm install -g tauri-test-cli
 
-# Then install tauri-driver
-tauri-driver setup
+# Then install tauri-test
+tauri-test setup
 ```
 
 ### Using Pixi (Recommended for Development)
@@ -41,8 +41,8 @@ Pixi handles all system-level dependencies automatically (WebKit, GTK, Rust).
 
 ```bash
 # Clone and install
-git clone https://github.com/lllangWV/tauri-driver-cli
-cd tauri-driver-cli
+git clone https://github.com/lllangWV/tauri-test-cli
+cd tauri-test-cli
 pixi install
 
 # Build the CLI
@@ -57,7 +57,7 @@ pixi run dev server --app ./target/debug/my-app
 The CLI will check for missing dependencies and provide install instructions:
 
 ```bash
-tauri-driver check-deps
+tauri-test check-deps
 ```
 
 <details>
@@ -71,25 +71,25 @@ sudo apt install libwebkit2gtk-4.1-dev    # Debian/Ubuntu
 sudo dnf install webkit2gtk4.1-devel       # Fedora
 sudo pacman -S webkit2gtk-4.1              # Arch
 
-# Rust and tauri-driver
+# Rust and tauri-test
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-tauri-driver setup
+tauri-test setup
 ```
 
 #### macOS
 
-WebKit is included in macOS. Just install tauri-driver:
+WebKit is included in macOS. Just install tauri-test:
 
 ```bash
-tauri-driver setup
+tauri-test setup
 ```
 
 #### Windows
 
-WebView2 is included in Windows 10/11. Just install tauri-driver:
+WebView2 is included in Windows 10/11. Just install tauri-test:
 
 ```bash
-tauri-driver setup
+tauri-test setup
 ```
 
 </details>
@@ -102,7 +102,7 @@ Start a persistent HTTP server - send commands anytime via HTTP.
 
 ```bash
 # Start server
-tauri-driver server --app ./target/debug/my-app &
+tauri-test server --app ./target/debug/my-app &
 
 # Send commands
 curl -s http://127.0.0.1:9222 -d '{"cmd":"click","selector":"button"}'
@@ -113,7 +113,7 @@ curl -s http://127.0.0.1:9222 -d '{"cmd":"snapshot"}'
 curl -s http://127.0.0.1:9222/status
 
 # Stop server
-tauri-driver stop
+tauri-test stop
 ```
 
 #### Virtual Display Mode (Linux)
@@ -122,11 +122,11 @@ Run in a virtual display to avoid focus-related throttling:
 
 ```bash
 # Using built-in --xvfb flag (recommended)
-tauri-driver server --app ./target/debug/my-app --xvfb &
+tauri-test server --app ./target/debug/my-app --xvfb &
 
 # Or manually with Xvfb
 Xvfb :99 -screen 0 1920x1080x24 &
-DISPLAY=:99 tauri-driver server --app ./target/debug/my-app &
+DISPLAY=:99 tauri-test server --app ./target/debug/my-app &
 ```
 
 ### Client Mode (CLI without --app)
@@ -135,27 +135,27 @@ Once the server is running, you can use CLI commands directly - no `--app` neede
 
 ```bash
 # Start server once
-tauri-driver server --app ./target/debug/my-app &
+tauri-test server --app ./target/debug/my-app &
 
 # Run commands - they automatically connect to the server!
-tauri-driver click "button.submit"
-tauri-driver type "input[name=email]" "user@example.com"
-tauri-driver screenshot --output /tmp/screen.png
-tauri-driver snapshot --output /tmp/dom.yaml
-tauri-driver eval "document.title"
-tauri-driver wait ".modal" --gone --timeout 5000
+tauri-test click "button.submit"
+tauri-test type "input[name=email]" "user@example.com"
+tauri-test screenshot --output /tmp/screen.png
+tauri-test snapshot --output /tmp/dom.yaml
+tauri-test eval "document.title"
+tauri-test wait ".modal" --gone --timeout 5000
 
 # Check server status
-tauri-driver status
+tauri-test status
 
 # Stop when done
-tauri-driver stop
+tauri-test stop
 ```
 
 Use `--port` to connect to a different server:
 
 ```bash
-tauri-driver click "button" --port 8080
+tauri-test click "button" --port 8080
 ```
 
 ### Why Server Mode?
@@ -181,11 +181,11 @@ tauri-driver click "button" --port 8080
 
 | Command | Description |
 |---------|-------------|
-| `tauri-driver setup` | Install tauri-driver via cargo |
-| `tauri-driver status [--port]` | Check if a server is running |
-| `tauri-driver stop [--port]` | Stop a running server |
-| `tauri-driver cleanup` | Kill stale WebDriver processes |
-| `tauri-driver check-deps` | Check system dependencies |
+| `tauri-test setup` | Install tauri-test via cargo |
+| `tauri-test status [--port]` | Check if a server is running |
+| `tauri-test stop [--port]` | Stop a running server |
+| `tauri-test cleanup` | Kill stale WebDriver processes |
+| `tauri-test check-deps` | Check system dependencies |
 
 ### Examples
 
@@ -193,22 +193,22 @@ tauri-driver click "button" --port 8080
 
 ```bash
 # Click a button
-tauri-driver click "button.submit"
+tauri-test click "button.submit"
 
 # Type into an input
-tauri-driver type "input[name=email]" "user@example.com"
+tauri-test type "input[name=email]" "user@example.com"
 
 # Take screenshot
-tauri-driver screenshot --output /tmp/screen.png
+tauri-test screenshot --output /tmp/screen.png
 
 # Get DOM snapshot (accessibility tree in YAML format)
-tauri-driver snapshot --output /tmp/dom.yaml
+tauri-test snapshot --output /tmp/dom.yaml
 
 # Execute JavaScript
-tauri-driver eval "document.title"
+tauri-test eval "document.title"
 
 # Wait for element to disappear
-tauri-driver wait ".modal" --gone --timeout 5000
+tauri-test wait ".modal" --gone --timeout 5000
 ```
 
 **Using curl:**
@@ -241,7 +241,7 @@ For single-invocation workflows with multiple commands:
 echo '[
   {"cmd":"click","selector":"button"},
   {"cmd":"screenshot","output":"/tmp/result.png"}
-]' | tauri-driver batch --app ./target/debug/my-app --json
+]' | tauri-test batch --app ./target/debug/my-app --json
 ```
 
 ## Single Commands
@@ -249,9 +249,9 @@ echo '[
 Each command starts a fresh session (slower but simpler):
 
 ```bash
-tauri-driver screenshot --app ./target/debug/my-app --output /tmp/screen.png
-tauri-driver click "button#submit" --app ./target/debug/my-app
-tauri-driver snapshot --app ./target/debug/my-app
+tauri-test screenshot --app ./target/debug/my-app --output /tmp/screen.png
+tauri-test click "button#submit" --app ./target/debug/my-app
+tauri-test snapshot --app ./target/debug/my-app
 ```
 
 ## Using with Claude Code
@@ -261,24 +261,24 @@ This CLI is designed for AI agents. Add this to your project's CLAUDE.md:
 ```markdown
 ## Testing Tauri Apps
 
-Use `tauri-driver` CLI for testing the Tauri application.
+Use `tauri-test` CLI for testing the Tauri application.
 
 ### Start test server
-tauri-driver server --app ./target/debug/my-app --xvfb &
+tauri-test server --app ./target/debug/my-app --xvfb &
 
 ### Available commands (once server is running, no --app needed)
-- Click: `tauri-driver click "button"`
-- Type: `tauri-driver type "input" "hello"`
-- Screenshot: `tauri-driver screenshot --output /tmp/screen.png`
-- Snapshot: `tauri-driver snapshot --output /tmp/dom.yaml`
-- Eval: `tauri-driver eval "document.title"`
-- Wait: `tauri-driver wait ".element" --timeout 5000`
+- Click: `tauri-test click "button"`
+- Type: `tauri-test type "input" "hello"`
+- Screenshot: `tauri-test screenshot --output /tmp/screen.png`
+- Snapshot: `tauri-test snapshot --output /tmp/dom.yaml`
+- Eval: `tauri-test eval "document.title"`
+- Wait: `tauri-test wait ".element" --timeout 5000`
 
 ### Check server status
-tauri-driver status
+tauri-test status
 
 ### Stop server
-tauri-driver stop
+tauri-test stop
 ```
 
 ## Development
@@ -287,8 +287,8 @@ tauri-driver stop
 
 ```bash
 # Clone and install dependencies
-git clone https://github.com/lllangWV/tauri-driver-cli
-cd tauri-driver-cli
+git clone https://github.com/lllangWV/tauri-test-cli
+cd tauri-test-cli
 pixi install
 
 # Build the CLI
@@ -334,7 +334,7 @@ pixi run test-app-build
 # Run the test app manually
 pixi run test-app-run
 
-# Start tauri-driver server with test app
+# Start tauri-test server with test app
 pixi run test-server
 ```
 
@@ -414,21 +414,21 @@ Example output:
 ### "Maximum number of active sessions" Error
 
 ```bash
-tauri-driver cleanup
+tauri-test cleanup
 ```
 
 ### Server won't start
 
 ```bash
-tauri-driver stop
-tauri-driver cleanup
+tauri-test stop
+tauri-test cleanup
 ```
 
 ### Missing dependencies
 
 ```bash
-tauri-driver check-deps
-tauri-driver setup  # Install tauri-driver
+tauri-test check-deps
+tauri-test setup  # Install tauri-test
 ```
 
 ### Window focus issues (slow commands)
@@ -436,16 +436,16 @@ tauri-driver setup  # Install tauri-driver
 Use the `--xvfb` flag to run in a virtual display:
 
 ```bash
-tauri-driver server --app ./target/debug/my-app --xvfb &
+tauri-test server --app ./target/debug/my-app --xvfb &
 ```
 
 ## CLI Reference
 
 ```
-tauri-driver - CLI for testing Tauri applications
+tauri-test - CLI for testing Tauri applications
 
 USAGE:
-  tauri-driver <command> [options]
+  tauri-test <command> [options]
 
   When --app is omitted, commands connect to a running server (client mode).
 
@@ -461,7 +461,7 @@ COMMANDS:
   status [--port <port>]            Check if a server is running
   stop [--port <port>]              Stop a running server
   cleanup                           Kill stale WebDriver processes
-  setup                             Install tauri-driver via cargo
+  setup                             Install tauri-test via cargo
   check-deps                        Check system dependencies
 
 OPTIONS:

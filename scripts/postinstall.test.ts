@@ -27,7 +27,7 @@ describe("postinstall script", () => {
     });
 
     const output = result.stdout.toString();
-    expect(output).toContain("tauri-driver-cli");
+    expect(output).toContain("tauri-test-cli");
   });
 
   test("script outputs 'installed successfully'", () => {
@@ -49,7 +49,7 @@ describe("postinstall script", () => {
     });
 
     const output = result.stdout.toString();
-    expect(output).toContain("tauri-driver");
+    expect(output).toContain("tauri-test");
   });
 });
 

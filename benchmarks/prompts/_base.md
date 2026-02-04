@@ -1,13 +1,13 @@
-# Base Context for tauri-driver-cli Testing
+# Base Context for tauri-test-cli Testing
 
-You are testing a Tauri application using the `tauri-driver-cli` tool. The test app is already built and ready.
+You are testing a Tauri application using the `tauri-test-cli` tool. The test app is already built and ready.
 
 ## Available Tools (via pixi run)
 
 You have access to these commands through `pixi run`:
 
 ### Server Management
-- `pixi run test-server` - Start the tauri-driver server with the test app
+- `pixi run test-server` - Start the tauri-test server with the test app
 - `pixi run status` - Check if server is running
 - `pixi run stop` - Stop the server
 - `pixi run cleanup` - Kill stale WebDriver processes

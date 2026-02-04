@@ -20,7 +20,7 @@ NC='\033[0m' # No Color
 usage() {
     echo "Usage: $0 [OPTIONS] [TASK...]"
     echo ""
-    echo "Run Claude Code benchmarks for tauri-driver-cli testing"
+    echo "Run Claude Code benchmarks for tauri-test-cli testing"
     echo ""
     echo "Options:"
     echo "  -m, --model MODEL    Model to use (default: sonnet)"
@@ -131,7 +131,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SUMMARY_FILE="$RESULTS_DIR/summary_${TIMESTAMP}.json"
 
 echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║        Claude Code Benchmark - tauri-driver-cli             ║${NC}"
+echo -e "${CYAN}║        Claude Code Benchmark - tauri-test-cli             ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${BLUE}Model:${NC} $MODEL"
