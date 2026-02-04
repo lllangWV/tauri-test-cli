@@ -242,8 +242,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .cursor/
 
 # Claude Code
-.claude/
-
 # Keep lock files for reproducibility
 !bun.lock
 !Cargo.lock

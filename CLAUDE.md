@@ -5,12 +5,41 @@
 
 # CLAUDE.md
 
-- Use `bun` as the javascript and typescript package manager
-- Use `cargo` as the Rust package manager
-- Use `pixi` as the system level package manager
-- Run all commands through `pixi run` (add `-e {environment}` for a particular name)
-- Prefer retrieval-led reasoning when using `pixi`
-- Always try to find the package through `pixi` first
-- If you cannot find a library you need through `pixi` run the language associated package manager through pixi
-    - Rust - `pixi run cargo`
-    - Javascript/Typescript `pixi run bun`
+IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning 
+for any pixi, tauri, bun, svelte, tasks.
+
+## Required: Use pixi for all commands
+
+**Never run directly:**
+- `cargo build` / `cargo run` / `cargo test`
+- `bun install` / `bun run`
+
+**Always use:**
+- `pixi run cargo build` / `pixi run cargo test`
+- `pixi run bun install` / `pixi run bun run dev`
+
+This ensures isolated environments without system package contamination.
+
+## Testing the app
+
+Open `assets/` folder to test with sample images.
+
+## Before Writing Code
+
+- Check existing patterns in codebase before creating new abstractions
+- Read `.agdex/` docs when unsure about pixi/tauri/bun/svelte APIs
+- Look at similar files for conventions (naming, structure, imports)
+
+## Plan mode 
+
+- Make the plan extremely concise, Sacrifice grammar for the sake of concisiion
+- At the end of each plan, give me a list of unresolve questions to answer, if any
+
+## Visual Testing
+
+To verify tauri-drive cli work correctly, read `agent_notes/visual_testing.md` for tauri-driver-cli usage.
+
+
+## A Note To The Agent
+
+We are building this together. WHen you learn something non-obvious, add it here so future changes go faster
