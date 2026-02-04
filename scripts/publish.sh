@@ -133,7 +133,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 echo -e "${BLUE}Committing changes...${NC}"
-git add pixi.toml package.json
+git add pixi.toml package.json .claude-plugin/plugin.json
 git commit -m "Bump version to $NEW_VERSION"
 
 echo -e "${BLUE}Creating git tag v${NEW_VERSION}...${NC}"
@@ -172,6 +172,12 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}▶ Step 6: Publishing to npm...${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
+
+# Check if logged in to npm, login if needed
+if ! npm whoami &>/dev/null; then
+    echo -e "${YELLOW}Not logged in to npm. Please login:${NC}"
+    npm login
+fi
 
 npm publish
 
