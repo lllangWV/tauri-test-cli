@@ -1,0 +1,8 @@
+{
+  "name": "tauri-driver-cli",
+  "description": "Visual testing skill for Tauri applications using tauri-driver-cli",
+  "version": "0.1.0",
+  "author": {
+    "name": "lllangWV"
+  }
+}

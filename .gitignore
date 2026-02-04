@@ -241,6 +241,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Cursor IDE
 .cursor/
 
+
+.claude/
+
 # Claude Code
 # Keep lock files for reproducibility
 !bun.lock

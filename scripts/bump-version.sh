@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Bump version in pixi.toml and package.json
+# Bump version in pixi.toml, package.json, and plugin.json
 # Usage: ./scripts/bump-version.sh [major|minor|patch|<version>]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,6 +9,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 PIXI_TOML="$PROJECT_DIR/pixi.toml"
 PACKAGE_JSON="$PROJECT_DIR/package.json"
+PLUGIN_JSON="$PROJECT_DIR/.claude-plugin/plugin.json"
 
 # Colors
 RED='\033[0;31m'
@@ -20,7 +21,7 @@ NC='\033[0m'
 usage() {
     echo "Usage: $0 [major|minor|patch|<version>]"
     echo ""
-    echo "Bump version in pixi.toml and package.json"
+    echo "Bump version in pixi.toml, package.json, and plugin.json"
     echo ""
     echo "Arguments:"
     echo "  major     Bump major version (1.0.0 -> 2.0.0)"
@@ -76,6 +77,13 @@ update_package_json() {
     sed -i "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$PACKAGE_JSON"
 }
 
+update_plugin_json() {
+    local new_version="$1"
+    if [[ -f "$PLUGIN_JSON" ]]; then
+        sed -i "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$PLUGIN_JSON"
+    fi
+}
+
 # Main
 if [[ $# -lt 1 ]]; then
     usage
@@ -112,6 +120,9 @@ update_pixi_toml "$NEW_VERSION"
 echo -e "${GREEN}Updating package.json...${NC}"
 update_package_json "$NEW_VERSION"
 
+echo -e "${GREEN}Updating plugin.json...${NC}"
+update_plugin_json "$NEW_VERSION"
+
 # Verify
 echo ""
 echo -e "${CYAN}Verification:${NC}"
@@ -119,11 +130,15 @@ echo -n "  pixi.toml:    "
 grep -E '^version = ' "$PIXI_TOML"
 echo -n "  package.json: "
 grep '"version"' "$PACKAGE_JSON" | sed 's/^[[:space:]]*//'
+if [[ -f "$PLUGIN_JSON" ]]; then
+    echo -n "  plugin.json:  "
+    grep '"version"' "$PLUGIN_JSON" | sed 's/^[[:space:]]*//'
+fi
 
 echo ""
 echo -e "${GREEN}Done!${NC} Version bumped to $NEW_VERSION"
 echo ""
 echo "Next steps:"
-echo "  git add pixi.toml package.json"
+echo "  git add pixi.toml package.json .claude-plugin/plugin.json"
 echo "  git commit -m \"Bump version to $NEW_VERSION\""
 echo "  git tag v$NEW_VERSION"

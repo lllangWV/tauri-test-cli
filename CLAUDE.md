@@ -37,7 +37,7 @@ Open `assets/` folder to test with sample images.
 
 ## Visual Testing
 
-To verify tauri-drive cli work correctly, read `agent_notes/visual_testing.md` for tauri-driver-cli usage.
+To verify tauri-drive cli work correctly, read `skills/tauri-driver-cli/visual_testing.md` for tauri-driver-cli usage.
 
 
 ## A Note To The Agent
