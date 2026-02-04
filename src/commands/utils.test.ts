@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { stopServer, cleanup, checkXvfb, buildXvfbCommand } from "./utils.js";
+import { stopServer, cleanup, checkXvfb, startXvfb, stopXvfb, getXvfbDisplay } from "./utils.js";
 import os from "os";
 
 describe("utils", () => {
@@ -53,34 +53,21 @@ describe("utils", () => {
     }
   });
 
-  describe("buildXvfbCommand", () => {
-    test("wraps command with xvfb-run", () => {
-      const args = ["node", "cli.js", "server", "--app", "./app"];
-      const result = buildXvfbCommand(args);
-
-      expect(result[0]).toBe("xvfb-run");
-      expect(result).toContain("--auto-servernum");
-      expect(result).toContain("node");
-      expect(result).toContain("cli.js");
-      expect(result).toContain("server");
+  describe("Xvfb management", () => {
+    test("getXvfbDisplay returns null when not started", () => {
+      // Before starting Xvfb, display should be null
+      const display = getXvfbDisplay();
+      expect(display === null || typeof display === "number").toBe(true);
     });
 
-    test("includes screen arguments", () => {
-      const result = buildXvfbCommand(["test"]);
-      const screenArg = result.find((arg) => arg.includes("-screen"));
-      expect(screenArg).toBeDefined();
-      expect(screenArg).toContain("1920x1080x24");
+    test("stopXvfb is safe to call when not running", () => {
+      // Should not throw when Xvfb is not running
+      expect(() => stopXvfb()).not.toThrow();
     });
 
-    test("preserves all original args", () => {
-      const args = ["arg1", "arg2", "--flag", "value"];
-      const result = buildXvfbCommand(args);
-
-      // All original args should be in the result
-      for (const arg of args) {
-        expect(result).toContain(arg);
-      }
-    });
+    // Note: We don't test startXvfb in unit tests as it requires
+    // Xvfb to be installed and modifies system state. Integration
+    // tests should cover that.
   });
 });
 

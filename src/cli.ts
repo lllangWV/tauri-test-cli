@@ -8,7 +8,7 @@ import { waitFor } from "./commands/wait.js";
 import { evaluate } from "./commands/eval.js";
 import { startServer } from "./server.js";
 import { ensureDependencies, printDependencyStatus } from "./checks.js";
-import { setup, stopServer, cleanup, checkXvfb, buildXvfbCommand } from "./commands/utils.js";
+import { setup, stopServer, cleanup, checkXvfb, startXvfb, stopXvfb } from "./commands/utils.js";
 
 /**
  * Send a command to a running server (client mode)
@@ -538,7 +538,7 @@ async function main() {
     const serverAutoWait = !!options["auto-wait"]; // Default false in server mode
     const useXvfb = !!options["xvfb"];
 
-    // If --xvfb flag is set, re-run ourselves wrapped in xvfb-run
+    // If --xvfb flag is set, start Xvfb and wait for it to be ready
     if (useXvfb) {
       if (process.platform === "win32") {
         console.error("Error: --xvfb is not supported on Windows");
@@ -546,28 +546,28 @@ async function main() {
       }
 
       if (!checkXvfb()) {
-        console.error("Error: xvfb-run not found. Install with:");
-        console.error("  sudo apt install xvfb  # Debian/Ubuntu");
-        console.error("  sudo dnf install xorg-x11-server-Xvfb  # Fedora");
+        console.error("Error: Xvfb not found. Install with:");
+        console.error("  sudo apt install xvfb x11-utils  # Debian/Ubuntu");
+        console.error("  sudo dnf install xorg-x11-server-Xvfb xorg-x11-utils  # Fedora");
         process.exit(1);
       }
 
-      // Build the command without --xvfb to avoid infinite loop
-      const args = process.argv.slice(2).filter((arg) => arg !== "--xvfb");
-      const xvfbArgs = buildXvfbCommand([process.argv[0], process.argv[1], ...args]);
+      try {
+        // Start Xvfb and wait for the display to be ready
+        await startXvfb();
 
-      console.error("Starting server in virtual display (xvfb)...");
-      console.error(`Running: ${xvfbArgs.join(" ")}`);
-
-      const proc = Bun.spawn(xvfbArgs, {
-        stdout: "inherit",
-        stderr: "inherit",
-        stdin: "inherit",
-      });
-
-      // Wait for the process to exit
-      const exitCode = await proc.exited;
-      process.exit(exitCode);
+        // Register cleanup handler for Xvfb
+        const cleanupXvfb = () => {
+          stopXvfb();
+        };
+        process.on("SIGINT", cleanupXvfb);
+        process.on("SIGTERM", cleanupXvfb);
+        process.on("exit", cleanupXvfb);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Error starting Xvfb: ${message}`);
+        process.exit(1);
+      }
     }
 
     try {

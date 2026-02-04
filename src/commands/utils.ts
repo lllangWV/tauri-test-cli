@@ -142,7 +142,7 @@ export async function cleanup(): Promise<{ success: boolean; killed: string[] }>
 }
 
 /**
- * Check if xvfb-run is available
+ * Check if Xvfb is available
  */
 export function checkXvfb(): boolean {
   if (os.platform() === "win32") {
@@ -150,7 +150,7 @@ export function checkXvfb(): boolean {
   }
 
   try {
-    execSync("which xvfb-run", { stdio: "ignore" });
+    execSync("which Xvfb", { stdio: "ignore" });
     return true;
   } catch {
     return false;
@@ -158,13 +158,111 @@ export function checkXvfb(): boolean {
 }
 
 /**
- * Build xvfb-run command wrapper
+ * Find an available display number
  */
-export function buildXvfbCommand(args: string[]): string[] {
-  return [
-    "xvfb-run",
-    "--auto-servernum",
-    "--server-args=-screen 0 1920x1080x24",
-    ...args,
-  ];
+function findAvailableDisplay(): number {
+  // Start from :99 and work up to find an unused display
+  for (let display = 99; display < 200; display++) {
+    const lockFile = `/tmp/.X${display}-lock`;
+    const socketFile = `/tmp/.X11-unix/X${display}`;
+    try {
+      // Check if lock file or socket exists
+      execSync(`test -e ${lockFile} || test -e ${socketFile}`, { stdio: "ignore" });
+      // Files exist, display is in use
+    } catch {
+      // Files don't exist, display is available
+      return display;
+    }
+  }
+  return 99; // Fallback
+}
+
+/**
+ * Wait for X display to be ready
+ */
+async function waitForDisplay(display: number, timeoutMs: number = 10000): Promise<boolean> {
+  const displayStr = `:${display}`;
+  const startTime = Date.now();
+  const pollInterval = 100; // ms
+
+  while (Date.now() - startTime < timeoutMs) {
+    try {
+      // Try to query the display with xdpyinfo
+      execSync(`DISPLAY=${displayStr} xdpyinfo`, { stdio: "ignore", timeout: 1000 });
+      return true;
+    } catch {
+      // Display not ready yet, wait and retry
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+  }
+  return false;
+}
+
+let xvfbProcess: ReturnType<typeof spawn> | null = null;
+let xvfbDisplay: number | null = null;
+
+/**
+ * Start Xvfb and wait for it to be ready
+ * Returns the display number (e.g., 99 for :99)
+ */
+export async function startXvfb(): Promise<number> {
+  const display = findAvailableDisplay();
+  const displayStr = `:${display}`;
+
+  console.error(`Starting Xvfb on display ${displayStr}...`);
+
+  // Start Xvfb with the display number
+  xvfbProcess = spawn("Xvfb", [
+    displayStr,
+    "-screen", "0", "1920x1080x24",
+    "-ac", // Disable access control (allows any client to connect)
+  ], {
+    stdio: "ignore",
+    detached: false,
+  });
+
+  xvfbProcess.on("error", (err) => {
+    console.error(`Xvfb error: ${err.message}`);
+  });
+
+  xvfbProcess.on("exit", (code) => {
+    if (code !== null && code !== 0) {
+      console.error(`Xvfb exited with code ${code}`);
+    }
+    xvfbProcess = null;
+  });
+
+  // Wait for the display to be ready
+  const ready = await waitForDisplay(display);
+  if (!ready) {
+    stopXvfb();
+    throw new Error(`Xvfb display ${displayStr} failed to start within timeout`);
+  }
+
+  console.error(`Xvfb ready on display ${displayStr}`);
+  xvfbDisplay = display;
+
+  // Set DISPLAY environment variable for this process
+  process.env.DISPLAY = displayStr;
+
+  return display;
+}
+
+/**
+ * Stop the Xvfb process if running
+ */
+export function stopXvfb(): void {
+  if (xvfbProcess) {
+    console.error("Stopping Xvfb...");
+    xvfbProcess.kill("SIGTERM");
+    xvfbProcess = null;
+    xvfbDisplay = null;
+  }
+}
+
+/**
+ * Get the current Xvfb display number
+ */
+export function getXvfbDisplay(): number | null {
+  return xvfbDisplay;
 }

@@ -28,8 +28,8 @@ pnpm = ">=10"
 "webkit2gtk4.1" = ">=2.48"
 
 # Note: For xvfb support, install via system package manager:
-#   sudo apt install xvfb  # Debian/Ubuntu
-#   sudo dnf install xorg-x11-server-Xvfb  # Fedora
+#   sudo apt install xvfb x11-utils  # Debian/Ubuntu
+#   sudo dnf install xorg-x11-server-Xvfb xorg-x11-utils  # Fedora
 
 # GTK/GUI stack (needed for Tauri on Linux)
 gtk3 = ">=3.24"
