@@ -1,6 +1,6 @@
 {
   "name": "tauri-driver-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation",
   "type": "module",
   "bin": {
