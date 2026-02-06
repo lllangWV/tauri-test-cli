@@ -81,29 +81,34 @@ MINOR_VERSION="${major}.$((minor + 1)).0"
 MAJOR_VERSION="$((major + 1)).0.0"
 
 echo -e "${CYAN}Select version bump type:${NC}"
-echo "  1) patch  (${CURRENT_VERSION} -> ${PATCH_VERSION})"
-echo "  2) minor  (${CURRENT_VERSION} -> ${MINOR_VERSION})"
-echo "  3) major  (${CURRENT_VERSION} -> ${MAJOR_VERSION})"
-echo "  4) cancel"
+echo "  1) none   (keep ${CURRENT_VERSION})"
+echo "  2) patch  (${CURRENT_VERSION} -> ${PATCH_VERSION})"
+echo "  3) minor  (${CURRENT_VERSION} -> ${MINOR_VERSION})"
+echo "  4) major  (${CURRENT_VERSION} -> ${MAJOR_VERSION})"
+echo "  5) cancel"
 echo ""
 
-read -p "Enter choice [1-4]: " -n 1 -r CHOICE
+read -p "Enter choice [1-5]: " -n 1 -r CHOICE
 echo ""
 
 case $CHOICE in
     1)
+        BUMP_TYPE=""
+        NEW_VERSION="$CURRENT_VERSION"
+        ;;
+    2)
         BUMP_TYPE="patch"
         NEW_VERSION="$PATCH_VERSION"
         ;;
-    2)
+    3)
         BUMP_TYPE="minor"
         NEW_VERSION="$MINOR_VERSION"
         ;;
-    3)
+    4)
         BUMP_TYPE="major"
         NEW_VERSION="$MAJOR_VERSION"
         ;;
-    4|*)
+    5|*)
         echo -e "${YELLOW}Publish cancelled.${NC}"
         exit 0
         ;;
@@ -115,33 +120,39 @@ echo ""
 # STEP 3: Bump version
 # ============================================================================
 
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}▶ Step 3: Bumping version to ${NEW_VERSION}...${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+if [[ -n "$BUMP_TYPE" ]]; then
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}▶ Step 3: Bumping version to ${NEW_VERSION}...${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
 
-./scripts/bump-version.sh "$BUMP_TYPE"
+    ./scripts/bump-version.sh "$BUMP_TYPE"
 
-# ============================================================================
-# STEP 4: Commit, tag, and push to GitHub
-# ============================================================================
+    # ============================================================================
+    # STEP 4: Commit, tag, and push to GitHub
+    # ============================================================================
 
-echo ""
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}▶ Step 4: Pushing to GitHub...${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+    echo ""
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}▶ Step 4: Pushing to GitHub...${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
 
-echo -e "${BLUE}Committing changes...${NC}"
-git add pixi.toml package.json .claude-plugin/plugin.json
-git commit -m "Bump version to $NEW_VERSION"
+    echo -e "${BLUE}Committing changes...${NC}"
+    git add pixi.toml package.json .claude-plugin/plugin.json
+    git commit -m "Bump version to $NEW_VERSION"
 
-echo -e "${BLUE}Creating git tag v${NEW_VERSION}...${NC}"
-git tag "v${NEW_VERSION}"
+    echo -e "${BLUE}Creating git tag v${NEW_VERSION}...${NC}"
+    git tag "v${NEW_VERSION}"
 
-echo -e "${BLUE}Pushing to remote...${NC}"
-git push
-git push --tags
+    echo -e "${BLUE}Pushing to remote...${NC}"
+    git push
+    git push --tags
+else
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}▶ Skipping version bump, keeping ${CURRENT_VERSION}${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+fi
 
 echo -e "${GREEN}✓ Pushed to GitHub${NC}"
 
