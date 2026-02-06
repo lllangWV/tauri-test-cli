@@ -245,6 +245,10 @@ export async function startXvfb(): Promise<number> {
   // Set DISPLAY environment variable for this process
   process.env.DISPLAY = displayStr;
 
+  // Force X11 backend so GTK/WebKit uses Xvfb instead of the real Wayland session
+  delete process.env.WAYLAND_DISPLAY;
+  process.env.GDK_BACKEND = "x11";
+
   return display;
 }
 

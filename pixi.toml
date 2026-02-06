@@ -12,10 +12,13 @@ platforms = ["linux-64", "osx-arm64", "osx-64"]
 [dependencies]
 # Rust toolchain (includes cargo)
 rust = ">=1.70"
-
+compilers = ">=1.11.0"
 # Build tools
 pkg-config = ">=0.29"
 openssl = ">=3.0"
+
+# This will work when it is published to conda-forge
+# tauri-driver = "*"
 
 # pnpm (fallback if bun not available)
 pnpm = ">=10"
@@ -85,7 +88,7 @@ setup = { cmd = "echo 'Setup complete! Run: pixi run build'", depends-on = ["ins
 server = "bun run ./src/cli.ts server"
 
 # Start server with xvfb (Linux - avoids focus/throttling issues)
-server-xvfb = "xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bun run ./src/cli.ts server"
+server-xvfb = "env -u WAYLAND_DISPLAY GDK_BACKEND=x11 xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bun run ./src/cli.ts server"
 
 # CLI commands (connect to running server on port 9222)
 click = "bun run ./src/cli.ts click"
@@ -116,7 +119,7 @@ test-app-run = { cmd = "cargo run", cwd = "apps/test-app/src-tauri" }
 
 # Start server with test app
 test-server = { cmd = "bun run ./src/cli.ts server --app ./apps/test-app/src-tauri/target/debug/test-app" }
-test-server-xvfb = { cmd = "xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bun run ./src/cli.ts server --app ./apps/test-app/src-tauri/target/debug/test-app" }
+test-server-xvfb = { cmd = "env -u WAYLAND_DISPLAY GDK_BACKEND=x11 xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bun run ./src/cli.ts server --app ./apps/test-app/src-tauri/target/debug/test-app" }
 
 # ============================================================================
 # BENCHMARKS (Claude Code headless testing)
@@ -160,15 +163,14 @@ bump-major = "./scripts/bump-version.sh major"
 publish = "./scripts/publish.sh"
 
 [system-requirements]
+# My system has glibc=2.42, so we need to target glibc=2.39
 libc = { family = "glibc", version = "2.39" }
 
 [activation.env]
-# Set up library paths for Tauri/Cargo to find GTK/WebKit within pixi
-PKG_CONFIG_PATH = "$CONDA_PREFIX/lib/pkgconfig:$CONDA_PREFIX/share/pkgconfig"
-LD_LIBRARY_PATH = "$CONDA_PREFIX/lib"
-LIBRARY_PATH = "$CONDA_PREFIX/lib"
-C_INCLUDE_PATH = "$CONDA_PREFIX/include"
-CPLUS_INCLUDE_PATH = "$CONDA_PREFIX/include"
-# WebKit rendering fixes - disable GPU acceleration to avoid EGL/DMABuf issues
+#   WebKitGTK (used by Tauri's webview on Linux) tries to use GPU-accelerated rendering via EGL/DMABuf
+#   by default. Inside a pixi/conda environment, the Mesa/GPU libraries bundled by
+#   conda often don't match your system's actual GPU drivers, causing WebKit to crash
+#   or render a blank window. These env vars force WebKit into a software rendering
+#   path that avoids those driver mismatches.
 WEBKIT_DISABLE_DMABUF_RENDERER = "1"
 WEBKIT_DISABLE_COMPOSITING_MODE = "1"

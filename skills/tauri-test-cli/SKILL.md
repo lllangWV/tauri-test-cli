@@ -89,6 +89,24 @@ npx tauri-test-cli screenshot --output /tmp/after-click.png
 npx tauri-test-cli stop
 ```
 
+## Pixi Environment (Linux)
+
+If running inside a pixi/conda environment, WebKitGTK's GPU rendering will likely fail due to driver mismatches. Set these env vars before launching:
+
+```bash
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+```
+
+Or add to `pixi.toml`:
+```toml
+[activation.env]
+WEBKIT_DISABLE_DMABUF_RENDERER = "1"
+WEBKIT_DISABLE_COMPOSITING_MODE = "1"
+```
+
+Without these, the app may crash or render a blank window.
+
 ## Troubleshooting Screenshots
 
 | What You See | Cause | Fix |
