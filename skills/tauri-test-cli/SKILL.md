@@ -16,9 +16,17 @@ Visual testing CLI for Tauri apps. Start server once, send commands anytime.
 
 Use whichever runtime the project prefers (check package.json scripts or lockfiles).
 
-### 1. Check Prerequisites
+### 1. Check Version & Prerequisites
 
 ```bash
+# Ensure you have the latest version
+LATEST=$(npm view tauri-test-cli version 2>/dev/null)
+CURRENT=$(npx tauri-test-cli --version 2>/dev/null)
+if [ "$LATEST" != "$CURRENT" ]; then
+  echo "Updating tauri-test-cli: $CURRENT -> $LATEST"
+  npx tauri-test-cli@latest --version  # forces npx to fetch latest
+fi
+
 # Check if tauri-driver is installed
 npx tauri-test-cli check-deps
 ```
