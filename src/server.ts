@@ -299,28 +299,20 @@ export async function startServer(options: ServerOptions): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  // Monitor ancestor chain — if any ancestor dies, shut down to prevent orphans
-  const getAncestorPids = (): number[] => {
-    const pids: number[] = [];
-    let pid = process.pid;
-    while (pid > 1) {
-      try {
-        const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
-        const ppid = parseInt(stat.split(") ")[1].split(" ")[1]);
-        if (ppid <= 1) break;
-        pids.push(ppid);
-        pid = ppid;
-      } catch { break; }
-    }
-    return pids;
+  // Monitor direct parent — if parent dies, shut down to prevent orphans
+  // Only checks direct parent (not full ancestor chain) so the server
+  // can survive when launched as a background process from a shell
+  const getDirectParentPid = (): number => {
+    try {
+      const stat = readFileSync(`/proc/${process.pid}/stat`, "utf8");
+      return parseInt(stat.split(") ")[1].split(" ")[1]);
+    } catch { return process.ppid; }
   };
-  const ancestorPids = getAncestorPids();
-  if (ancestorPids.length > 0) {
+  const parentPid = getDirectParentPid();
+  if (parentPid > 1) {
     setInterval(() => {
-      for (const pid of ancestorPids) {
-        try { process.kill(pid, 0); } catch { shutdown(); return; }
-      }
-    }, 500);
+      try { process.kill(parentPid, 0); } catch { shutdown(); return; }
+    }, 2000);
   }
 
   // Connect to the app first
