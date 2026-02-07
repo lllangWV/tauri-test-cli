@@ -72,6 +72,7 @@ async function executeCommand(cmd: Command, globalAutoWait: boolean): Promise<un
         output: cmd.output,
         fullPage: cmd.fullPage,
         autoWait,
+        timeout: cmd.timeout,
       });
       break;
 

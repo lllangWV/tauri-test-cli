@@ -5,7 +5,7 @@ export interface ScreenshotOptions {
   output?: string;
   fullPage?: boolean;
   autoWait?: boolean; // Wait for DOM to stabilize before screenshot (default: true)
-  timeout?: number; // Timeout in ms (default: 5000)
+  timeout?: number; // Timeout in ms (default: 15000)
 }
 
 export interface ScreenshotResult {
@@ -28,7 +28,7 @@ export async function screenshot(
 ): Promise<ScreenshotResult> {
   const browser = requireBrowser();
   const autoWait = options.autoWait ?? true;
-  const timeout = options.timeout ?? 5000;
+  const timeout = options.timeout ?? 15000;
 
   // Wait for DOM to stabilize before taking screenshot
   if (autoWait) {

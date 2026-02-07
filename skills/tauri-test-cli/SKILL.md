@@ -78,12 +78,23 @@ cd ./path/to/src-tauri && cargo build
 
 Read `tauri.conf.json` — if it has a `devUrl` (e.g., `http://localhost:5173`), the debug binary needs the frontend dev server running.
 
-Check if `build/` or `dist/` exists in the frontend directory. If so, the binary may work without a dev server. If not, start it:
 ```bash
-# Check project for dev command
+# 1. Check if devUrl exists
+grep -o '"devUrl".*' path/to/tauri.conf.json
+
+# 2. If devUrl found, check if the dev server is already reachable
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
+
+# 3. If curl fails (connection refused / non-200), start the dev server
+# Look at package.json for the right dev command
 cd frontend-dir && npm run dev &
 sleep 5
+
+# 4. Verify it's reachable now
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 ```
+
+If `build/` or `dist/` exists in the frontend directory, the binary may work without a dev server — but verify by checking the app loads correctly after starting the server.
 
 ## Step 6: Clean Up & Start Server
 

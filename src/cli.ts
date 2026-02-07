@@ -259,6 +259,7 @@ async function executeCommand(cmd: BatchCommand, globalAutoWait: boolean): Promi
         output: cmd.output,
         fullPage: cmd.fullPage,
         autoWait,
+        timeout: cmd.timeout,
       });
 
     case "snapshot":
@@ -429,6 +430,7 @@ async function main() {
             cmd: "screenshot",
             output: options.output as string,
             fullPage: !!options["full-page"],
+            timeout: options.timeout ? parseInt(options.timeout as string) : undefined,
           };
           break;
 
@@ -623,6 +625,7 @@ async function main() {
           output: options.output as string,
           fullPage: !!options["full-page"],
           autoWait,
+          timeout: options.timeout ? parseInt(options.timeout as string) : undefined,
         });
         break;
 

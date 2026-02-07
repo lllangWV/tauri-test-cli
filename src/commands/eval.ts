@@ -6,23 +6,18 @@ import { requireBrowser } from "../driver.js";
 export async function evaluate(script: string): Promise<unknown> {
   const browser = requireBrowser();
 
-  // Wrap in a function to allow return statements
-  const wrappedScript = `
-    return (function() {
-      ${script}
-    })();
-  `;
-
+  // Try simple expression first (e.g. `document.title`, `JSON.stringify(...)`)
   try {
+    const result = await browser.execute(`return ${script}`);
+    return result;
+  } catch {
+    // Fall back to IIFE wrapper for multi-statement scripts with their own `return`
+    const wrappedScript = `
+      return (function() {
+        ${script}
+      })();
+    `;
     const result = await browser.execute(wrappedScript);
     return result;
-  } catch (err) {
-    // Try without wrapping (for simple expressions)
-    try {
-      const result = await browser.execute(`return ${script}`);
-      return result;
-    } catch {
-      throw err;
-    }
   }
 }
