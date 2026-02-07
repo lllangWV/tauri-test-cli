@@ -243,6 +243,10 @@ export async function startXvfb(): Promise<number> {
   console.error(`Xvfb ready on display ${displayStr}`);
   xvfbDisplay = display;
 
+  // Store in env var so bundled code can read it reliably
+  // (bun build may duplicate the module variable across chunks)
+  process.env.TAURI_TEST_XVFB_DISPLAY = String(display);
+
   // Set DISPLAY environment variable for this process
   process.env.DISPLAY = displayStr;
 
@@ -262,12 +266,20 @@ export function stopXvfb(): void {
     xvfbProcess.kill("SIGTERM");
     xvfbProcess = null;
     xvfbDisplay = null;
+    delete process.env.TAURI_TEST_XVFB_DISPLAY;
   }
 }
 
 /**
- * Get the current Xvfb display number
+ * Get the current Xvfb display number.
+ * Reads from env var to survive bun single-file bundling
+ * (which can duplicate module-level variables across chunks).
  */
 export function getXvfbDisplay(): number | null {
+  const envVal = process.env.TAURI_TEST_XVFB_DISPLAY;
+  if (envVal !== undefined) {
+    const n = Number(envVal);
+    return Number.isFinite(n) ? n : null;
+  }
   return xvfbDisplay;
 }

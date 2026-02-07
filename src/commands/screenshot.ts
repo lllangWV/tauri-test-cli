@@ -113,7 +113,9 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, message: string):
 }
 
 /**
- * Capture screenshot using html2canvas loaded from CDN
+ * Capture screenshot using html2canvas loaded from CDN.
+ * Uses execute() + polling instead of executeAsync() because
+ * executeAsync hangs after SPA navigation in WebKit/Xvfb.
  */
 async function captureWithHtml2Canvas(browser: any): Promise<string> {
   // Load html2canvas if not present
@@ -140,14 +142,14 @@ async function captureWithHtml2Canvas(browser: any): Promise<string> {
   // Small delay to ensure script is ready
   await new Promise((r) => setTimeout(r, 50));
 
-  // Capture using html2canvas
-  const base64 = await browser.executeAsync((done: (result: string) => void) => {
+  // Start html2canvas render (fire-and-forget via execute)
+  await browser.execute(() => {
+    (window as any).__h2cResult = undefined;
     const h2c = (window as any).html2canvas;
     if (!h2c) {
-      done("");
+      (window as any).__h2cResult = "";
       return;
     }
-
     h2c(document.body, {
       useCORS: true,
       allowTaint: true,
@@ -156,13 +158,21 @@ async function captureWithHtml2Canvas(browser: any): Promise<string> {
     })
       .then((canvas: HTMLCanvasElement) => {
         const dataUrl = canvas.toDataURL("image/png");
-        done(dataUrl.replace(/^data:image\/png;base64,/, ""));
+        (window as any).__h2cResult = dataUrl.replace(/^data:image\/png;base64,/, "");
       })
-      .catch(() => done(""));
-
+      .catch(() => {
+        (window as any).__h2cResult = "";
+      });
     // Internal timeout
-    setTimeout(() => done(""), 4000);
+    setTimeout(() => {
+      if ((window as any).__h2cResult === undefined) {
+        (window as any).__h2cResult = "";
+      }
+    }, 4000);
   });
+
+  // Poll for result
+  const base64 = await pollForResult(browser, "__h2cResult");
 
   if (!base64) {
     throw new Error("html2canvas capture returned empty");
@@ -174,10 +184,13 @@ async function captureWithHtml2Canvas(browser: any): Promise<string> {
 /**
  * Simple canvas-based screenshot fallback for Xvfb.
  * Renders the DOM content to a canvas using the browser's own rendering.
- * Less accurate than html2canvas but works without CDN access.
+ * Uses execute() + polling instead of executeAsync() because
+ * executeAsync hangs after SPA navigation in WebKit/Xvfb.
  */
 async function captureWithCanvas(browser: any): Promise<string> {
-  const base64 = await browser.executeAsync((done: (result: string) => void) => {
+  // Start canvas render (fire-and-forget via execute)
+  await browser.execute(() => {
+    (window as any).__canvasResult = undefined;
     try {
       const w = window.innerWidth || 800;
       const h = window.innerHeight || 600;
@@ -208,7 +221,7 @@ async function captureWithCanvas(browser: any): Promise<string> {
         ctx.drawImage(img, 0, 0);
         URL.revokeObjectURL(url);
         const dataUrl = canvas.toDataURL("image/png");
-        done(dataUrl.replace(/^data:image\/png;base64,/, ""));
+        (window as any).__canvasResult = dataUrl.replace(/^data:image\/png;base64,/, "");
       };
       img.onerror = () => {
         // SVG foreignObject failed (security restrictions), fall back to text render
@@ -221,23 +234,44 @@ async function captureWithCanvas(browser: any): Promise<string> {
           ctx.fillText(lines[i], 10, 20 + i * 20);
         }
         const dataUrl = canvas.toDataURL("image/png");
-        done(dataUrl.replace(/^data:image\/png;base64,/, ""));
+        (window as any).__canvasResult = dataUrl.replace(/^data:image\/png;base64,/, "");
       };
       img.src = url;
 
       // Internal timeout
       setTimeout(() => {
-        const dataUrl = canvas.toDataURL("image/png");
-        done(dataUrl.replace(/^data:image\/png;base64,/, ""));
+        if ((window as any).__canvasResult === undefined) {
+          const dataUrl = canvas.toDataURL("image/png");
+          (window as any).__canvasResult = dataUrl.replace(/^data:image\/png;base64,/, "");
+        }
       }, 4000);
     } catch (e) {
-      done("");
+      (window as any).__canvasResult = "";
     }
   });
+
+  // Poll for result
+  const base64 = await pollForResult(browser, "__canvasResult");
 
   if (!base64) {
     throw new Error("Canvas screenshot capture returned empty");
   }
 
   return base64;
+}
+
+/**
+ * Poll for a result stored on window[key] by a previously-fired execute().
+ * Returns the value once it's no longer undefined.
+ */
+async function pollForResult(browser: any, key: string, intervalMs = 100, maxMs = 5000): Promise<string> {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    const val = await browser.execute((k: string) => (window as any)[k], key);
+    if (val !== undefined) return val;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  // Final check
+  const val = await browser.execute((k: string) => (window as any)[k], key);
+  return val ?? "";
 }
