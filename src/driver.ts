@@ -1,18 +1,90 @@
-import { spawn, type ChildProcess } from "child_process";
+import { spawn, execSync, type ChildProcess } from "child_process";
 import { remote, type Browser } from "webdriverio";
 import { homedir } from "os";
 import { join } from "path";
 
 let driverProcess: ChildProcess | null = null;
 let browser: Browser | null = null;
+let exitHandlerRegistered = false;
 
 const DRIVER_PORT = 4444;
 const DRIVER_HOST = "127.0.0.1";
+
+/**
+ * Recursively find all descendant PIDs of a given PID.
+ */
+function getDescendantPids(pid: number): number[] {
+  try {
+    // pgrep -P finds direct children; recurse for full tree
+    const children = execSync(`pgrep -P ${pid} 2>/dev/null`, { encoding: "utf8" })
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map(Number);
+    const descendants: number[] = [];
+    for (const child of children) {
+      descendants.push(child, ...getDescendantPids(child));
+    }
+    return descendants;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Kill a process and all its descendants.
+ */
+function killProcessTree(pid: number, signal: NodeJS.Signals = "SIGKILL"): void {
+  const descendants = getDescendantPids(pid);
+  // Kill children first (bottom-up), then the parent
+  for (const child of descendants.reverse()) {
+    try { process.kill(child, signal); } catch {}
+  }
+  try { process.kill(pid, signal); } catch {}
+}
+
+/**
+ * Force-kill the driver process tree.
+ * Called on process exit to prevent orphaned app windows.
+ */
+export function forceKillDriver(): void {
+  if (driverProcess?.pid) {
+    killProcessTree(driverProcess.pid);
+    driverProcess = null;
+  }
+}
 
 export interface DriverOptions {
   appPath: string;
   headless?: boolean;
   waitTimeout?: number; // How long to wait for page load (ms), default 15000
+}
+
+/**
+ * Kill any stale process listening on the driver port and its descendants.
+ * Prevents "Maximum number of active sessions" from orphaned tauri-driver.
+ * Also kills orphaned WebKitWebDriver on adjacent port.
+ */
+function killStaleDriver(): void {
+  let killed = false;
+  // Kill processes on both the driver port and the WebKitWebDriver port (driver + 1)
+  for (const port of [DRIVER_PORT, DRIVER_PORT + 1]) {
+    try {
+      const pids = execSync(`lsof -ti:${port} 2>/dev/null`, { encoding: "utf8" }).trim();
+      if (pids) {
+        for (const pidStr of pids.split("\n")) {
+          const pid = parseInt(pidStr);
+          if (pid) { killProcessTree(pid); killed = true; }
+        }
+      }
+    } catch {
+      // No process on port, or lsof not available
+    }
+  }
+  if (killed) {
+    // Allow ports to be released
+    execSync("sleep 0.5");
+  }
 }
 
 /**
@@ -23,12 +95,20 @@ export async function startDriver(): Promise<void> {
     return;
   }
 
+  killStaleDriver();
+
   const tauriDriverPath = join(homedir(), ".cargo", "bin", "tauri-driver");
 
   return new Promise((resolve, reject) => {
     driverProcess = spawn(tauriDriverPath, [], {
       stdio: ["ignore", "pipe", "pipe"],
     });
+
+    // Register exit handler once to kill orphaned processes
+    if (!exitHandlerRegistered) {
+      exitHandlerRegistered = true;
+      process.on("exit", forceKillDriver);
+    }
 
     driverProcess.on("error", (err) => {
       reject(new Error(`Failed to start tauri-driver: ${err.message}`));
@@ -61,8 +141,8 @@ export async function startDriver(): Promise<void> {
  * Stop tauri-driver process
  */
 export function stopDriver(): void {
-  if (driverProcess) {
-    driverProcess.kill();
+  if (driverProcess?.pid) {
+    killProcessTree(driverProcess.pid);
     driverProcess = null;
   }
 }

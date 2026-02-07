@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { resolve } from "path";
 import { connect, disconnect } from "./driver.js";
 import { screenshot } from "./commands/screenshot.js";
 import { snapshot } from "./commands/snapshot.js";
@@ -397,7 +398,7 @@ async function main() {
     }
   }
 
-  const appPath = options.app as string;
+  const appPath = options.app ? resolve(options.app as string) : (undefined as string | undefined);
   const jsonOutput = !!options.json;
   const port = options.port ? parseInt(options.port as string) : 9222;
 

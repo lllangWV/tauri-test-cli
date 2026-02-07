@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
-import { connect, disconnect, getBrowser } from "./driver.js";
+import { readFileSync } from "fs";
+import { connect, disconnect, getBrowser, forceKillDriver } from "./driver.js";
 import { screenshot } from "./commands/screenshot.js";
 import { snapshot } from "./commands/snapshot.js";
 import { click } from "./commands/click.js";
@@ -239,14 +240,11 @@ async function shutdown(): Promise<void> {
 
   console.error("Shutting down...");
 
+  // Kill driver process tree immediately (synchronous) to prevent orphans
+  forceKillDriver();
+
   if (serverInstance) {
     serverInstance.close();
-  }
-
-  try {
-    await disconnect();
-  } catch {
-    // Ignore disconnect errors during shutdown
   }
 
   process.exit(0);
@@ -294,6 +292,35 @@ export async function startServer(options: ServerOptions): Promise<void> {
   // Handle shutdown signals
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+
+  // Monitor ancestor processes - if any ancestor dies, clean up to prevent orphaned windows.
+  // Captures all ancestor PIDs at startup (e.g., shell → xvfb-run → pixi → bun).
+  // If any ancestor disappears, we know we've been orphaned.
+  const ancestorPids: number[] = [];
+  try {
+    let pid = process.ppid;
+    while (pid > 1) {
+      ancestorPids.push(pid);
+      const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+      pid = parseInt(stat.split(" ")[3]); // field 4 = ppid
+    }
+  } catch {
+    // Can't read /proc, fall back to just parent
+    if (process.ppid > 1) ancestorPids.push(process.ppid);
+  }
+  if (ancestorPids.length > 0) {
+    setInterval(() => {
+      for (const pid of ancestorPids) {
+        try {
+          process.kill(pid, 0);
+        } catch {
+          // Ancestor died - clean up immediately
+          forceKillDriver();
+          process.exit(1);
+        }
+      }
+    }, 500);
+  }
 
   // Connect to the app first
   console.error(`Launching app and waiting for load (timeout: ${waitTimeout}ms)...`);
