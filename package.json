@@ -1,6 +1,6 @@
 {
   "name": "tauri-test-cli",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "CLI for testing Tauri applications with screenshot capture, DOM inspection, and user interaction simulation",
   "type": "module",
   "bin": {
