@@ -49,6 +49,7 @@ expat = ">=2.5"
 fontconfig = ">=2.14"
 freetype = ">=2.12"
 harfbuzz = ">=8.0"
+xdotool = ">=3.20211022.1,<4"
 
 # ============================================================================
 # TASKS
@@ -69,6 +70,7 @@ test = "bun test --timeout 10000"
 test-watch = "bun test --watch"
 test-unit = "bun test src/cli.test.ts src/checks.test.ts src/commands/utils.test.ts --timeout 10000"
 test-integration = "bun test src/integration.test.ts --timeout 60000"
+test-xvfb-wake = { cmd = "bun test src/xvfb-wake.test.ts --timeout 60000", depends-on = ["test-app-build"] }
 test-all = { cmd = "bun test --timeout 60000", depends-on = ["test-app-build"] }
 
 # Install npm dependencies

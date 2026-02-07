@@ -66,6 +66,11 @@ async function executeCommand(cmd: Command, globalAutoWait: boolean): Promise<un
   const cmdStart = Date.now();
   let result: unknown;
 
+  // Re-inject keep-alive before screenshot/snapshot (handles full page reloads that clear JS context)
+  if (cmd.cmd === "screenshot" || cmd.cmd === "snapshot") {
+    await injectKeepAlive();
+  }
+
   switch (cmd.cmd) {
     case "screenshot":
       result = await screenshot({

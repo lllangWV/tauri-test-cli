@@ -222,7 +222,7 @@ export function getBrowser(): Browser | null {
  */
 export async function disconnect(): Promise<void> {
   if (browser) {
-    await browser.deleteSession();
+    try { await browser.deleteSession(); } catch {}
     browser = null;
   }
   stopDriver();

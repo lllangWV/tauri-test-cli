@@ -1,5 +1,6 @@
 import { writeFile } from "fs/promises";
 import { requireBrowser, waitForDomStable } from "../driver.js";
+import { getXvfbDisplay } from "./utils.js";
 
 export interface ScreenshotOptions {
   output?: string;
@@ -50,17 +51,35 @@ export async function screenshot(
     );
     method = "html2canvas";
   } catch (err) {
-    console.error(`html2canvas failed: ${err}, trying native...`);
-    // Fall back to native with timeout
+    // html2canvas can hang when WebKit throttles rAF (unfocused window on
+    // real display, or deferred painting in Xvfb). Fall back to a simple
+    // canvas screenshot that doesn't depend on rAF or the rendering pipeline.
+    console.error(`html2canvas failed: ${err}, trying canvas fallback...`);
     try {
       data = await withTimeout(
-        browser.takeScreenshot(),
+        captureWithCanvas(browser),
         timeout,
-        `Native screenshot timed out after ${timeout}ms`
+        "Canvas screenshot timed out"
       );
-      method = "native";
-    } catch (nativeErr) {
-      throw new Error(`All screenshot methods failed: ${err}, ${nativeErr}`);
+      method = "canvas";
+    } catch (canvasErr) {
+      // In Xvfb, native takeScreenshot() hangs indefinitely after DOM changes
+      // (WebKit defers painting with no display link). Don't attempt it.
+      if (getXvfbDisplay() !== null) {
+        throw new Error(`All screenshot methods failed in Xvfb: html2canvas: ${err}, canvas: ${canvasErr}`);
+      }
+      // On a real display, native still works as a last resort
+      console.error(`Canvas failed: ${canvasErr}, trying native...`);
+      try {
+        data = await withTimeout(
+          browser.takeScreenshot(),
+          timeout,
+          `Native screenshot timed out after ${timeout}ms`
+        );
+        method = "native";
+      } catch (nativeErr) {
+        throw new Error(`All screenshot methods failed: html2canvas: ${err}, canvas: ${canvasErr}, native: ${nativeErr}`);
+      }
     }
   }
 
@@ -147,6 +166,77 @@ async function captureWithHtml2Canvas(browser: any): Promise<string> {
 
   if (!base64) {
     throw new Error("html2canvas capture returned empty");
+  }
+
+  return base64;
+}
+
+/**
+ * Simple canvas-based screenshot fallback for Xvfb.
+ * Renders the DOM content to a canvas using the browser's own rendering.
+ * Less accurate than html2canvas but works without CDN access.
+ */
+async function captureWithCanvas(browser: any): Promise<string> {
+  const base64 = await browser.executeAsync((done: (result: string) => void) => {
+    try {
+      const w = window.innerWidth || 800;
+      const h = window.innerHeight || 600;
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+
+      // White background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+
+      // Serialize DOM to SVG foreignObject and render to canvas
+      const serializer = new XMLSerializer();
+      const cloned = document.documentElement.cloneNode(true) as HTMLElement;
+      const html = serializer.serializeToString(cloned);
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+        <foreignObject width="100%" height="100%">
+          ${html}
+        </foreignObject>
+      </svg>`;
+
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        const dataUrl = canvas.toDataURL("image/png");
+        done(dataUrl.replace(/^data:image\/png;base64,/, ""));
+      };
+      img.onerror = () => {
+        // SVG foreignObject failed (security restrictions), fall back to text render
+        URL.revokeObjectURL(url);
+        ctx.fillStyle = "#000000";
+        ctx.font = "16px monospace";
+        const text = document.body.innerText || "";
+        const lines = text.split("\n");
+        for (let i = 0; i < lines.length && i < 40; i++) {
+          ctx.fillText(lines[i], 10, 20 + i * 20);
+        }
+        const dataUrl = canvas.toDataURL("image/png");
+        done(dataUrl.replace(/^data:image\/png;base64,/, ""));
+      };
+      img.src = url;
+
+      // Internal timeout
+      setTimeout(() => {
+        const dataUrl = canvas.toDataURL("image/png");
+        done(dataUrl.replace(/^data:image\/png;base64,/, ""));
+      }, 4000);
+    } catch (e) {
+      done("");
+    }
+  });
+
+  if (!base64) {
+    throw new Error("Canvas screenshot capture returned empty");
   }
 
   return base64;

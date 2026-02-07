@@ -177,6 +177,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/wayland-1.24.0-hd6090a7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/webkit2gtk4.1-2.48.5-pl5321h78154aa_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/woff2-1.0.2-h54a6638_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/xdotool-3.20211022.1-h4ab18f5_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xkeyboard-config-2.46-hb03c661_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xorg-libice-1.1.2-hb9d3cd8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xorg-libsm-1.2.6-he73a12e_0.conda
@@ -3938,6 +3939,20 @@ packages:
   license_family: MIT
   size: 73958
   timestamp: 1755852332312
+- conda: https://conda.anaconda.org/conda-forge/linux-64/xdotool-3.20211022.1-h4ab18f5_2.conda
+  sha256: 5f58425111532df2d9782d8b882717eadd4131452beaaafe8eaec0713a5d4ac3
+  md5: 363149aa2211d112b71abe6af914a67e
+  depends:
+  - libgcc >=12
+  - libxkbcommon >=1.7.0,<2.0a0
+  - xorg-libx11 >=1.8.10,<2.0a0
+  - xorg-libxi >=1.8.2,<2.0a0
+  - xorg-libxinerama >=1.1.5,<1.2.0a0
+  - xorg-libxtst >=1.2.5,<2.0a0
+  license: BSD-3-Clause
+  license_family: BSD
+  size: 205605
+  timestamp: 1727961512837
 - conda: https://conda.anaconda.org/conda-forge/linux-64/xkeyboard-config-2.46-hb03c661_0.conda
   sha256: aa03b49f402959751ccc6e21932d69db96a65a67343765672f7862332aa32834
   md5: 71ae752a748962161b4740eaff510258
