@@ -27,18 +27,16 @@ Use this prefix for EVERY command below. Examples below use `CMD` as placeholder
 
 ## Step 2: Ensure Latest Version
 
-**bunx caches aggressively.** Always verify version freshness:
+**bunx and npx cache aggressively.** Always clear all caches before running:
 
 ```bash
-LATEST=$(npm view tauri-test-cli version 2>/dev/null)
-echo "Latest on npm: $LATEST"
-
-# For bunx: clear stale cache if needed
-rm -rf ~/.bun/install/cache/tauri-test-cli* 2>/dev/null
-
-# For npx: force latest
-# npx tauri-test-cli@latest --version
+# Clear ALL known cache locations
+rm -rf /tmp/bunx-*tauri-test-cli* 2>/dev/null        # bunx temp cache (primary)
+rm -rf ~/.bun/install/cache/tauri-test-cli* 2>/dev/null  # bun install cache
+rm -rf ~/.npm/_npx/*/node_modules/tauri-test-cli 2>/dev/null  # npx cache
 ```
+
+This ensures you always get the latest published version.
 
 ## Step 3: Check Dependencies
 
@@ -151,7 +149,7 @@ CMD stop
 | Blank/white screen | App not loaded yet | Increase `--wait` timeout |
 | "tauri-driver not found" | Missing dependency | Run `CMD setup` |
 | "Maximum sessions" error | Stale processes | Run `CMD cleanup` |
-| "Xvfb display failed to start" | Old CLI version (< 0.6.2) | Clear bunx cache: `rm -rf ~/.bun/install/cache/tauri-test-cli*` and retry |
+| "Xvfb display failed to start" | Old CLI version (< 0.6.2) | Clear caches: `rm -rf /tmp/bunx-*tauri-test-cli* ~/.bun/install/cache/tauri-test-cli*` and retry |
 | Server not ready after 15s | Slow app startup | Wait longer, check if dev server is needed |
 
 ## Screenshot vs Snapshot
