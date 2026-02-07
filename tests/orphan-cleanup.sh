@@ -53,7 +53,7 @@ start_server() {
   local port=$1
   env -u WAYLAND_DISPLAY GDK_BACKEND=x11 xvfb-run --auto-servernum \
     --server-args='-screen 0 1920x1080x24' \
-    pixi run bun run ./src/cli.ts server --app "$APP_BIN" --port "$port" 2>/dev/null &
+    pixi run bun run ./src/cli.ts server --app "$APP_BIN" --port "$port" &>/dev/null &
   echo $!
 }
 

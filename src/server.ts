@@ -293,31 +293,26 @@ export async function startServer(options: ServerOptions): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  // Monitor ancestor processes - if any ancestor dies, clean up to prevent orphaned windows.
-  // Captures all ancestor PIDs at startup (e.g., shell → xvfb-run → pixi → bun).
-  // If any ancestor disappears, we know we've been orphaned.
-  const ancestorPids: number[] = [];
-  try {
-    let pid = process.ppid;
+  // Monitor ancestor chain — if any ancestor dies, shut down to prevent orphans
+  const getAncestorPids = (): number[] => {
+    const pids: number[] = [];
+    let pid = process.pid;
     while (pid > 1) {
-      ancestorPids.push(pid);
-      const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
-      pid = parseInt(stat.split(" ")[3]); // field 4 = ppid
+      try {
+        const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+        const ppid = parseInt(stat.split(") ")[1].split(" ")[1]);
+        if (ppid <= 1) break;
+        pids.push(ppid);
+        pid = ppid;
+      } catch { break; }
     }
-  } catch {
-    // Can't read /proc, fall back to just parent
-    if (process.ppid > 1) ancestorPids.push(process.ppid);
-  }
+    return pids;
+  };
+  const ancestorPids = getAncestorPids();
   if (ancestorPids.length > 0) {
     setInterval(() => {
       for (const pid of ancestorPids) {
-        try {
-          process.kill(pid, 0);
-        } catch {
-          // Ancestor died - clean up immediately
-          forceKillDriver();
-          process.exit(1);
-        }
+        try { process.kill(pid, 0); } catch { shutdown(); return; }
       }
     }, 500);
   }

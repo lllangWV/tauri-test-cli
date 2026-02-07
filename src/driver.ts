@@ -100,8 +100,15 @@ export async function startDriver(): Promise<void> {
   const tauriDriverPath = join(homedir(), ".cargo", "bin", "tauri-driver");
 
   return new Promise((resolve, reject) => {
-    driverProcess = spawn(tauriDriverPath, [], {
-      stdio: ["ignore", "pipe", "pipe"],
+    // Wrap tauri-driver in a shell (via setsid for its own process group) that monitors stdin.
+    // When our process dies (any reason including SIGKILL), the stdin pipe breaks,
+    // `read` returns EOF, the shell exits, and the EXIT trap kills the whole group.
+    // setsid gives the shell its own session/group so `kill 0` doesn't affect the caller.
+    driverProcess = spawn("setsid", [
+      "sh", "-c",
+      `"${tauriDriverPath}" & PID=$!; trap "kill 0 2>/dev/null" EXIT; read; exit`,
+    ], {
+      stdio: ["pipe", "pipe", "pipe"],
     });
 
     // Register exit handler once to kill orphaned processes
