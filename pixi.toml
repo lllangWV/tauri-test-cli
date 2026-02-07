@@ -59,7 +59,8 @@ harfbuzz = ">=8.0"
 install-bun = "curl -fsSL https://bun.sh/install | bash"
 
 # Build and development
-build = "bun build ./src/cli.ts --outdir ./dist --target node"
+generate-skill-content = "bun scripts/generate-skill-content.ts"
+build = { cmd = "bun build ./src/cli.ts --outdir ./dist --target node", depends-on = ["generate-skill-content"] }
 dev = "bun run ./src/cli.ts"
 typecheck = "bun run tsc --noEmit"
 

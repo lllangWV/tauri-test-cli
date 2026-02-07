@@ -30,7 +30,8 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "prepublishOnly": "bun run build && bun test",
+    "generate-skill-content": "bun scripts/generate-skill-content.ts",
+    "prepublishOnly": "bun run generate-skill-content && bun run build && bun test",
     "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {

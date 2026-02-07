@@ -10,6 +10,7 @@ import { evaluate } from "./commands/eval.js";
 import { startServer } from "./server.js";
 import { ensureDependencies, printDependencyStatus } from "./checks.js";
 import { setup, stopServer, cleanup, checkXvfb, startXvfb, stopXvfb } from "./commands/utils.js";
+import { installSkill } from "./commands/install-skill.js";
 
 /**
  * Send a command to a running server (client mode)
@@ -99,6 +100,9 @@ COMMANDS:
 
   check-deps
       Check if all required system dependencies are installed
+
+  install-skill [--global | --project]
+      Install Claude Code skill for tauri-test-cli
 
   help
       Show this help message
@@ -397,6 +401,15 @@ async function main() {
       console.log(`No server running on port ${port}`);
       process.exit(1);
     }
+  }
+
+  // Install skill command
+  if (command === "install-skill") {
+    const result = installSkill({
+      global: !!options.global,
+      project: !!options.project,
+    });
+    process.exit(result.success ? 0 : 1);
   }
 
   const appPath = options.app ? resolve(options.app as string) : (undefined as string | undefined);
