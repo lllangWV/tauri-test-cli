@@ -181,14 +181,15 @@ function findAvailableDisplay(): number {
  * Wait for X display to be ready
  */
 async function waitForDisplay(display: number, timeoutMs: number = 10000): Promise<boolean> {
-  const displayStr = `:${display}`;
+  const lockFile = `/tmp/.X${display}-lock`;
+  const socketFile = `/tmp/.X11-unix/X${display}`;
   const startTime = Date.now();
   const pollInterval = 100; // ms
 
   while (Date.now() - startTime < timeoutMs) {
     try {
-      // Try to query the display with xdpyinfo
-      execSync(`DISPLAY=${displayStr} xdpyinfo`, { stdio: "ignore", timeout: 1000 });
+      // Check if lock file and socket both exist (Xvfb creates these when ready)
+      execSync(`test -e ${lockFile} && test -e ${socketFile}`, { stdio: "ignore", timeout: 1000 });
       return true;
     } catch {
       // Display not ready yet, wait and retry
